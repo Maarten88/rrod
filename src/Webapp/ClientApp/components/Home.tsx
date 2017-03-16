@@ -12,7 +12,7 @@ export default class Home extends React.Component<void, void> {
                     <div className="container">
                         <div id="tagline">
                             <ScrollEffect animate="bounceIn">
-                                <h1 className="home-intro-text">Demo1!</h1>
+                                <h1 className="home-intro-text">Demo!</h1>
                                 <h1 className="home-intro-text">...React, Redux, Orleans and Dotnet</h1>
                                     <h3 className="home-intro-text">Introducing the <Scroll.Link to="demo" href="#" smooth={true} duration={700} offset={-50}>RROD</Scroll.Link> stack</h3>
                             </ScrollEffect>

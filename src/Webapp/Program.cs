@@ -97,12 +97,10 @@ namespace Webapp
                 .ToArray();
 
             // if so, start a listener to respond to Acme (Let's Encrypt) requests, using a response received via an Orleans Cache Grain
+            IWebHost acmeHost = null;
             if (secureUrls.Any())
             {
-                //var acmeUrls = secureUrls
-                //    .Select(uri => new UriBuilder("http://*:80/.well-known/acme-challenge/").ToString())
-                //    .ToArray();
-                var acmeHost = new WebHostBuilder()
+                acmeHost = new WebHostBuilder()
                     .UseEnvironment(environment)
                     .ConfigureServices(services => {
                         services.AddSingleton<IConfiguration>(Configuration);
@@ -430,7 +428,6 @@ namespace Webapp
                     //});
 
                     app.UseWebSockets();
-                    // app.MapWebSocketManager("/ws", app.ApplicationServices.GetService<NotificationsMessageHandler>());
                     app.Map("/actions", ap => ap.UseMiddleware<WebSocketHandlerMiddleware>(new ActionsHandler()));
 
                     app.UseMvc(routes =>
@@ -452,6 +449,13 @@ namespace Webapp
                         var certificate = await certificateManager.GetCertificate(httpsDomains);
                         if (certificate != null)
                             options.UseHttps(certificate);
+
+                        if (acmeHost != null)
+                        {
+                            // Stop the acme listener, to avoid duplicate port bindings in Kestrel if we want to bind our site to port 80 too
+                            acmeHost.Dispose();
+                            acmeHost = null;
+                        }
                     }
                 })
                 .Build();
