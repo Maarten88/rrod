@@ -1,0 +1,46 @@
+import * as WeatherForecasts from './WeatherForecasts';
+import * as Counter from './Counter';
+import * as Footer from './Footer';
+import * as Contact from './Contact';
+import * as Session from './Session';
+import * as Connection from './WebsocketConnection';
+import * as Login from './Login';
+import * as User from './User';
+import * as Register from './Register';
+import * as Auth from './Auth';
+
+// The top-level state object
+export interface ApplicationState {
+    session: Session.SettingsState,
+    connection: Connection.ConnectionState,
+    auth: Auth.AuthState,
+    user: User.UserModel,
+    login: Login.LoginState,
+    register: Register.RegisterState,
+    counter: Counter.CounterState,
+    footer: Footer.FooterState,
+    contact: Contact.ContactState,
+    weatherForecasts: WeatherForecasts.WeatherForecastsState
+}
+
+// Whenever an action is dispatched, Redux will update each top-level application state property using
+// the reducer with the matching name. It's important that the names match exactly, and that the reducer
+// acts on the corresponding ApplicationState property type.
+export const reducers = {
+    session: Session.reducer,
+    connection: Connection.reducer,
+    auth: Auth.reducer,
+    user: User.reducer,
+    login: Login.reducer,
+    register: Register.reducer,
+    counter: Counter.reducer,
+    footer: Footer.reducer,
+    contact: Contact.reducer,
+    weatherForecasts: WeatherForecasts.reducer
+};
+
+// This type can be used as a hint on action creators so that its 'dispatch' and 'getState' params are
+// correctly typed to match your store.
+export interface AppThunkAction<TAction> {
+    (dispatch: (action: TAction) => void, getState: () => ApplicationState): void;
+}

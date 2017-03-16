@@ -1,0 +1,17 @@
+{
+  "ConnectionStrings": {
+    "DataConnectionString": "UseDevelopmentStorage=true",
+    "ReduxConnectionString": "UseDevelopmentStorage=true"
+  },
+  "AcmeSettings": {
+    "AcmeServer": "https://acme-staging.api.letsencrypt.org/directory"
+  },
+  "Logging": {
+    "IncludeScopes": false,
+    "LogLevel": {
+      "Default": "Debug",
+      "System": "Information",
+      "Microsoft": "Information"
+    }
+  }
+}

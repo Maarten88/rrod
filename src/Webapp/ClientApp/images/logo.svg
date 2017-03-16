@@ -1,0 +1,5 @@
+﻿<svg width="9mm" height="9mm" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny">
+  <desc>RROD Logo</desc>
+  <!-- Show outline of canvas using 'rect' element -->
+  <circle cx="50" cy="50" r="40" fill="white" stroke="red" stroke-width="12"  />
+</svg>

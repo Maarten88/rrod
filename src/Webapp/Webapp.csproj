@@ -1,0 +1,137 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+    <DebugType>portable</DebugType>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>Rodos-Secrets</UserSecretsId>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netcoreapp1.1' ">$(PackageTargetFallback);dnxcore50;portable-net45+win8+wp8+wpa81</PackageTargetFallback>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="**\*.resx" />
+    <EmbeddedResource Include="compiler\resources\**\*" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="appsettings.json;ClientApp\dist\**\*;Views\**\*;web.config;wwwroot\**\*" Exclude="wwwroot\dist\*.map">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="wwwroot\images\logo.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\Certes\Certes.csproj" />
+    <ProjectReference Include="..\..\lib\Portable.BouncyCastle\Portable.BouncyCastle.csproj" />
+    <!--<ProjectReference Include="..\..\lib\WebSocketManager\WebSocketManager.csproj" />-->
+    <ProjectReference Include="..\GrainInterfaces\GrainInterfaces.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+  
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="1.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Https" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="1.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="1.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaServices" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="1.1.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="2.1.2" />
+    <PackageReference Include="Microsoft.Orleans.Client" Version="2.0.0-*" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="1.1.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocol.Extensions" Version="2.0.0-*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="1.1.0" />
+    <PackageReference Include="IdentityServer4" Version="1.1.1" />
+    <PackageReference Include="IdentityServer4.AspNetIdentity" Version="1.0.0" />
+    <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="1.0.5" />
+    <PackageReference Include="System.Runtime" Version="4.3.0" />
+    <PackageReference Include="System.Collections" Version="4.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="1.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="ClientApp\server\ApiResult.ts">
+      <CustomToolNamespace>Models\ApiResult.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\ClientApplication.ts">
+      <CustomToolNamespace>..\GrainInterfaces\IClientApplicationGrain.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\Counter.ts">
+      <CustomToolNamespace>..\GrainInterfaces\ICounterGrain.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\ExternalLoginConfirmationViewModel.ts">
+      <CustomToolNamespace>Account\ExternalLoginConfirmationViewModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\ExternalProvider.ts">
+      <CustomToolNamespace>Account\ExternalProvider.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\ForgotPasswordViewModel.ts">
+      <CustomToolNamespace>Account\ForgotPasswordViewModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\LoggedOutViewModel.ts">
+      <CustomToolNamespace>Account\LoggedOutViewModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\LoginInputModel.ts">
+      <CustomToolNamespace>Account\LoginInputModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\LoginViewModel.ts">
+      <CustomToolNamespace>Account\LoginViewModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\LogoutInputModel.ts">
+      <CustomToolNamespace>Account\LogoutInputModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\LogoutViewModel.ts">
+      <CustomToolNamespace>Account\LogoutViewModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\RegisterViewModel.ts">
+      <CustomToolNamespace>Account\RegisterViewModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\ResetPasswordViewModel.ts">
+      <CustomToolNamespace>Account\ResetPasswordViewModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\SendCodeViewModel.ts">
+      <CustomToolNamespace>Account\SendCodeViewModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\Subscribe.ts">
+      <CustomToolNamespace>Models\Subscribe.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\User.ts">
+      <CustomToolNamespace>..\GrainInterfaces\IUserGrain.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\UserModel.ts">
+      <CustomToolNamespace>Account\UserModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\server\VerifyCodeViewModel.ts">
+      <CustomToolNamespace>Account\VerifyCodeViewModel.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\typewriter\ApiResult.ts">
+      <CustomToolNamespace>Models\ApiResult.cs</CustomToolNamespace>
+    </None>
+    <None Update="ClientApp\typewriter\Subscribe.ts">
+      <CustomToolNamespace>Models\Subscribe.cs</CustomToolNamespace>
+    </None>
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
+  </PropertyGroup>
+  <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish" Condition=" '$(IsCrossTargetingBuild)' != 'true' ">
+    <Exec Command="npm install" />
+    <Exec Command="node node_modules/webpack/bin/webpack.js --env.prod" />
+  </Target>
+  <Target Name="PostpublishScript" AfterTargets="Publish" Condition=" '$(IsCrossTargetingBuild)' != 'true' " />
+</Project>

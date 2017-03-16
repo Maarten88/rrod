@@ -1,0 +1,11 @@
+{
+  "plugins": [ "lodash" ],
+  "presets": [
+    [
+      "es2015",
+      { "modules": false }
+    ],
+    "react"
+  ],
+  "comments": false
+}
