@@ -138,7 +138,7 @@ namespace Webapp
                                 var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
                                 await certGrain.UpdateCertificate(certData);
                             };
-                            options.RetreiveCertificate = async (domainName) => {
+                            options.RetrieveCertificate = async (domainName) => {
                                 var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
                                 var certData = await certGrain.GetCertificate();
                                 return certData.Value;
@@ -206,7 +206,7 @@ namespace Webapp
                                 var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
                                 await certGrain.UpdateCertificate(certData);
                             };
-                            options.RetreiveCertificate = async (domainName) => {
+                            options.RetrieveCertificate = async (domainName) => {
                                 var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
                                 var certData = await certGrain.GetCertificate();
                                 return certData.Value;

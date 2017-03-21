@@ -46,7 +46,7 @@ namespace Microsoft.AspNetCore.Hosting
             // TODO Create a double lock around this using another option method so this does not get 
             // run on multiple machines at the same time...
             X509Certificate2 cert = null;
-            byte[] pfx = await options.RetreiveCertificate(domainNames.First());
+            byte[] pfx = await options.RetrieveCertificate(domainNames.First());
             if (pfx != null)
             {
                 cert = new X509Certificate2(pfx, options.AcmeSettings.PfxPassword);
