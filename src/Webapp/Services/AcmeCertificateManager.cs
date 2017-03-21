@@ -24,6 +24,7 @@ namespace Microsoft.AspNetCore.Hosting
 
     public interface ICertificateManager
     {
+        Task<string> GetChallengeResponse(string challenge);
         Task<X509Certificate2> GetCertificate(string[] domainNames);
     }
 
@@ -33,6 +34,11 @@ namespace Microsoft.AspNetCore.Hosting
         public AcmeCertificateManager(IOptions<AcmeOptions> options)
         {
             this.options = options.Value;
+        }
+
+        public Task<string> GetChallengeResponse(string challenge)
+        {
+            return this.options.GetChallengeResponse(challenge);
         }
 
         public async Task<X509Certificate2> GetCertificate(string[] domainNames)
@@ -47,7 +53,7 @@ namespace Microsoft.AspNetCore.Hosting
                 if (cert.NotAfter - DateTime.UtcNow < TimeSpan.FromDays(14))
                 {
                     // Request a new cert 14 days before the current one expires
-                    pfx = await RequestNewCertificate(domainNames, options.AcmeSettings, options.ChallengeResponseReceiver);
+                    pfx = await RequestNewCertificate(domainNames, options.AcmeSettings, options.SetChallengeResponse);
                     if (pfx != null)
                     {
                         await options.StoreCertificate(domainNames.First(), pfx);
@@ -57,7 +63,7 @@ namespace Microsoft.AspNetCore.Hosting
             }
             else
             {
-                pfx = await RequestNewCertificate(domainNames, options.AcmeSettings, options.ChallengeResponseReceiver);
+                pfx = await RequestNewCertificate(domainNames, options.AcmeSettings, options.SetChallengeResponse);
                 if (pfx != null)
                 {
                     await options.StoreCertificate(domainNames.First(), pfx);
