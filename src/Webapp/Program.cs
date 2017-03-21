@@ -102,10 +102,14 @@ namespace Webapp
 
             // if so, start a listener to respond to Acme (Let's Encrypt) requests, using a response received via an Orleans Cache Grain
             string[] httpsDomains;
-            IWebHost acmeHost = null;
+            IWebHost acmeHost;
+            AcmeOptions acmeOptions;
+
             if (!secureUrls.Any())
             {
                 httpsDomains = new string[] { };
+                acmeOptions = null;
+                acmeHost = null;
             }
             else
             {
@@ -114,6 +118,33 @@ namespace Webapp
                 listenUrls = listenUrls.Union(httpsListen);
                 httpsDomains = secureUrls.Select(url => url.Host).Distinct().ToArray();
 
+                acmeOptions = new AcmeOptions
+                {
+                    DomainNames = httpsDomains,
+                    GetChallengeResponse = async (challenge) =>
+                    {
+                        var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
+                        var response = await cacheGrain.Get();
+                        return response.Value;
+                    },
+                    SetChallengeResponse = async (challenge, response) =>
+                    {
+                        var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
+                        await cacheGrain.Set(new Immutable<string>(response), TimeSpan.FromHours(2));
+                    },
+                    StoreCertificate = async (string domainName, byte[] certData) =>
+                    {
+                        var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
+                        await certGrain.UpdateCertificate(certData);
+                    },
+                    RetrieveCertificate = async (domainName) =>
+                    {
+                        var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
+                        var certData = await certGrain.GetCertificate();
+                        return certData.Value;
+                    }
+                };
+
                 acmeHost = new WebHostBuilder()
                     .UseEnvironment(environment)
                     .ConfigureServices(services => {
@@ -121,30 +152,7 @@ namespace Webapp
                         services.Configure<AcmeSettings>(Configuration.GetSection("AcmeSettings"));
 
                         // Register a certitificate manager, supplying methods to store and retreive certificates and acme challenge responses
-                        services.AddAcmeCertificateManager(options => {
-                            options.DomainNames = httpsDomains;
-                            options.GetChallengeResponse = async (challenge) =>
-                            {
-                                var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
-                                var response = await cacheGrain.Get();
-                                return response.Value;
-                            };
-                            options.SetChallengeResponse = async (challenge, response) =>
-                            {
-                                var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
-                                await cacheGrain.Set(new Immutable<string>(response), TimeSpan.FromHours(2));
-                            };
-                            options.StoreCertificate = async (string domainName, byte[] certData) => {
-                                var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
-                                await certGrain.UpdateCertificate(certData);
-                            };
-                            options.RetrieveCertificate = async (domainName) => {
-                                var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
-                                var certData = await certGrain.GetCertificate();
-                                return certData.Value;
-                            };
-                        });
-
+                        services.AddAcmeCertificateManager(acmeOptions);
                     })
                     .UseUrls("http://*:80/.well-known/acme-challenge/")
                     .UseKestrel()
@@ -185,33 +193,9 @@ namespace Webapp
                     // Add a basic Orleans-based distributed cache
                     services.AddOrleansCache();
 
-                    // If we have at least one https url configured, then configure a custom Middleware that can store and retreive certificates and challenge responses
-                    // We permanently store certificates in a specialized grain, and store the challenge responses in our generic cache grain
                     if (secureUrls.Any())
                     {
-                        services.AddAcmeCertificateManager(options => {
-                            options.DomainNames = httpsDomains;
-                            options.GetChallengeResponse = async (challenge) =>
-                            {
-                                var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
-                                var response = await cacheGrain.Get();
-                                return response.Value;
-                            };
-                            options.SetChallengeResponse = async (challenge, response) => 
-                            { 
-                                var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
-                                await cacheGrain.Set(new Immutable<string>(response), TimeSpan.FromHours(2));
-                            };
-                            options.StoreCertificate = async (string domainName, byte[] certData) => {
-                                var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
-                                await certGrain.UpdateCertificate(certData);
-                            };
-                            options.RetrieveCertificate = async (domainName) => {
-                                var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
-                                var certData = await certGrain.GetCertificate();
-                                return certData.Value;
-                            };
-                        });
+                        services.AddAcmeCertificateManager(acmeOptions);
                     }
                     services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
                     services.AddResponseCompression(options => {

@@ -29,7 +29,7 @@
     "aspnet-prerendering": "^2.0.3",
     "aspnet-webpack": "^1.0.28",
     "aspnet-webpack-react": "^1.0.5",
-    "awesome-typescript-loader": "^3.0.8",
+    "awesome-typescript-loader": "^3.1.2",
     "babel-core": "^6.23.1",
     "babel-loader": "^6.3.2",
     "babel-plugin-lodash": "^3.2.11",

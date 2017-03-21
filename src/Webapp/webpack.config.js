@@ -26,7 +26,7 @@ var sharedConfig = () => ({
     module: {
         rules: [
             { test: /\.tsx?$/, include: /ClientApp/, use: 'babel-loader' },
-            { test: /\.tsx?$/, include: /ClientApp/, use: 'awesome-typescript-loader?silent=true' }
+            { test: /\.tsx?$/, include: /ClientApp/, use: { loader: 'awesome-typescript-loader', options: { silent: true } } }
         ]
     }
 });

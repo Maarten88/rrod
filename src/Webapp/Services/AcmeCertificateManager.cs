@@ -18,7 +18,20 @@ namespace Microsoft.AspNetCore.Hosting
         {
             services.AddTransient<IConfigureOptions<AcmeOptions>, AcmeOptionsSetup>();
             services.Configure(options);
-            services.AddSingleton<ICertificateManager, AcmeCertificateManager>();
+            services.AddTransient<ICertificateManager, AcmeCertificateManager>();
+        }
+
+        public static void AddAcmeCertificateManager(this IServiceCollection services, AcmeOptions options)
+        {
+            services.AddTransient<IConfigureOptions<AcmeOptions>, AcmeOptionsSetup>();
+            // services.AddSingleton(Options.Create(options));
+            services.AddTransient(sp =>
+            {
+                var setup = sp.GetService<IConfigureOptions<AcmeOptions>>();
+                setup.Configure(options);
+                return Options.Create(options);
+            });
+            services.AddTransient<ICertificateManager, AcmeCertificateManager>();
         }
     }
 
