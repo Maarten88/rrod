@@ -25,13 +25,9 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Identity;
 using IdentityModel;
 using System.IdentityModel.Tokens;
-using IdentityServer4;
-using Orleans.Serialization;
 
 namespace Webapp
 {
@@ -96,26 +92,73 @@ namespace Webapp
                 .Where(uri => uri.Scheme == "https")
                 .ToArray();
 
+
+            // It is possible to request Acme certificates with subject alternative names, but this is not yet implemented.
+            // Usually we'll need only a single address, so I'm taking the first one
+            // string firstSecureHost = secureUrls.Any() ? secureUrls.First().Host : null;
+            var listenUrls = urls
+                .Distinct()
+                .Where(url => url.StartsWith("http://"));
+
             // if so, start a listener to respond to Acme (Let's Encrypt) requests, using a response received via an Orleans Cache Grain
-            IWebHost acmeHost = null;
-            if (secureUrls.Any())
+            string[] httpsDomains;
+            IWebHost acmeHost;
+            AcmeOptions acmeOptions;
+
+            if (!secureUrls.Any())
             {
+                httpsDomains = new string[] { };
+                acmeOptions = null;
+                acmeHost = null;
+            }
+            else
+            {
+                // Kestrel can only listen once to any given port, so we make sure multiple https addresses get only one listener
+                var httpsListen = secureUrls.GroupBy(url => url.Port).Select(url => url.First()).Select(url => "https://*:" + url.Port);
+                listenUrls = listenUrls.Union(httpsListen);
+                httpsDomains = secureUrls.Select(url => url.Host).Distinct().ToArray();
+
+                acmeOptions = new AcmeOptions
+                {
+                    DomainNames = httpsDomains,
+                    GetChallengeResponse = async (challenge) =>
+                    {
+                        var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
+                        var response = await cacheGrain.Get();
+                        return response.Value;
+                    },
+                    SetChallengeResponse = async (challenge, response) =>
+                    {
+                        var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
+                        await cacheGrain.Set(new Immutable<string>(response), TimeSpan.FromHours(2));
+                    },
+                    StoreCertificate = async (string domainName, byte[] certData) =>
+                    {
+                        var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
+                        await certGrain.UpdateCertificate(certData);
+                    },
+                    RetrieveCertificate = async (domainName) =>
+                    {
+                        var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
+                        var certData = await certGrain.GetCertificate();
+                        return certData.Value;
+                    }
+                };
+
                 acmeHost = new WebHostBuilder()
                     .UseEnvironment(environment)
                     .ConfigureServices(services => {
                         services.AddSingleton<IConfiguration>(Configuration);
                         services.Configure<AcmeSettings>(Configuration.GetSection("AcmeSettings"));
+
+                        // Register a certitificate manager, supplying methods to store and retreive certificates and acme challenge responses
+                        services.AddAcmeCertificateManager(acmeOptions);
                     })
                     .UseUrls("http://*:80/.well-known/acme-challenge/")
                     .UseKestrel()
                     .UseLoggerFactory(loggerFactory)
                     .Configure(app => {
-                        app.UseAcmeResponse(async (challenge) => 
-                        { 
-                            var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
-                            var response = await cacheGrain.Get();
-                            return response.Value;
-                        });
+                        app.UseAcmeResponse();
                     })
                     .Build();
 
@@ -129,26 +172,6 @@ namespace Webapp
                     logger.LogError("Error: can't start web listener for acme certificate renewal, probably the web address is in use by another process. Exception message is: " + e.Message);
                     logger.LogError("Ignoring noncritical error (stop W3SVC or Skype to fix this), continuing...");
                 }
-            }
-
-            // It is possible to request Acme certificates with subject alternative names, but this is not yet implemented.
-            // Usually we'll need only a single address, so I'm taking the first one
-            // string firstSecureHost = secureUrls.Any() ? secureUrls.First().Host : null;
-            var listenUrls = urls
-                .Distinct()
-                .Where(url => url.StartsWith("http://"));
-
-            string[] httpsDomains;
-            if (secureUrls.Any())
-            {
-                // Kestrel can only listen once to any given port, so we make sure multiple https addresses get only one listener
-                var httpsListen = secureUrls.GroupBy(url => url.Port).Select(url => url.First()).Select(url => "https://*:" + url.Port);
-                listenUrls = listenUrls.Union(httpsListen);
-                httpsDomains = secureUrls.Select(url => url.Host).Distinct().ToArray();
-            }
-            else
-            {
-                httpsDomains = new string[] { };
             }
 
             var host = new WebHostBuilder()
@@ -170,27 +193,9 @@ namespace Webapp
                     // Add a basic Orleans-based distributed cache
                     services.AddOrleansCache();
 
-                    // If we have at least one https url configured, then configure a custom Middleware that can store and retreive certificates and challenge responses
-                    // We permanently store certificates in a specialized grain, and store the challenge responses in our generic cache grain
                     if (secureUrls.Any())
                     {
-                        services.AddAcmeCertificateManager(options => {
-                            options.DomainNames = httpsDomains;
-                            options.ChallengeResponseReceiver = async (challenge, response) => 
-                            { 
-                                var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
-                                await cacheGrain.Set(new Immutable<string>(response), TimeSpan.FromHours(2));
-                            };
-                            options.StoreCertificate = async (string domainName, byte[] certData) => {
-                                var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
-                                await certGrain.UpdateCertificate(certData);
-                            };
-                            options.RetreiveCertificate = async (domainName) => {
-                                var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
-                                var certData = await certGrain.GetCertificate();
-                                return certData.Value;
-                            };
-                        });
+                        services.AddAcmeCertificateManager(acmeOptions);
                     }
                     services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
                     services.AddResponseCompression(options => {
@@ -445,17 +450,18 @@ namespace Webapp
                     // TODO: Make this into a nice Kestrel.Https.Acme nuget package
                     if (secureUrls.Any())
                     {
+                        // Request a new certificate with Let's Encrypt and store it for next time
                         var certificateManager = options.ApplicationServices.GetService<ICertificateManager>();
                         var certificate = await certificateManager.GetCertificate(httpsDomains);
                         if (certificate != null)
                             options.UseHttps(certificate);
 
-                        if (acmeHost != null)
-                        {
-                            // Stop the acme listener, to avoid duplicate port bindings in Kestrel if we want to bind our site to port 80 too
-                            acmeHost.Dispose();
-                            acmeHost = null;
-                        }
+                        //if (acmeHost != null)
+                        //{
+                        //    // How to stop the acme listener? Kestrel can't bind to a url, so we need to stop the acme listener to free up port 80 if we want to bind our site to that port too
+                        //    acmeHost.Dispose();
+                        //    acmeHost = null;
+                        //}
                     }
                 })
                 .Build();

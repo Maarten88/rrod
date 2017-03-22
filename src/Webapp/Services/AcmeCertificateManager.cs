@@ -18,12 +18,26 @@ namespace Microsoft.AspNetCore.Hosting
         {
             services.AddTransient<IConfigureOptions<AcmeOptions>, AcmeOptionsSetup>();
             services.Configure(options);
-            services.AddSingleton<ICertificateManager, AcmeCertificateManager>();
+            services.AddTransient<ICertificateManager, AcmeCertificateManager>();
+        }
+
+        public static void AddAcmeCertificateManager(this IServiceCollection services, AcmeOptions options)
+        {
+            services.AddTransient<IConfigureOptions<AcmeOptions>, AcmeOptionsSetup>();
+            // services.AddSingleton(Options.Create(options));
+            services.AddTransient(sp =>
+            {
+                var setup = sp.GetService<IConfigureOptions<AcmeOptions>>();
+                setup.Configure(options);
+                return Options.Create(options);
+            });
+            services.AddTransient<ICertificateManager, AcmeCertificateManager>();
         }
     }
 
     public interface ICertificateManager
     {
+        Task<string> GetChallengeResponse(string challenge);
         Task<X509Certificate2> GetCertificate(string[] domainNames);
     }
 
@@ -35,19 +49,24 @@ namespace Microsoft.AspNetCore.Hosting
             this.options = options.Value;
         }
 
+        public Task<string> GetChallengeResponse(string challenge)
+        {
+            return this.options.GetChallengeResponse(challenge);
+        }
+
         public async Task<X509Certificate2> GetCertificate(string[] domainNames)
         {
             // TODO Create a double lock around this using another option method so this does not get 
             // run on multiple machines at the same time...
             X509Certificate2 cert = null;
-            byte[] pfx = await options.RetreiveCertificate(domainNames.First());
+            byte[] pfx = await options.RetrieveCertificate(domainNames.First());
             if (pfx != null)
             {
                 cert = new X509Certificate2(pfx, options.AcmeSettings.PfxPassword);
                 if (cert.NotAfter - DateTime.UtcNow < TimeSpan.FromDays(14))
                 {
                     // Request a new cert 14 days before the current one expires
-                    pfx = await RequestNewCertificate(domainNames, options.AcmeSettings, options.ChallengeResponseReceiver);
+                    pfx = await RequestNewCertificate(domainNames, options.AcmeSettings, options.SetChallengeResponse);
                     if (pfx != null)
                     {
                         await options.StoreCertificate(domainNames.First(), pfx);
@@ -57,7 +76,7 @@ namespace Microsoft.AspNetCore.Hosting
             }
             else
             {
-                pfx = await RequestNewCertificate(domainNames, options.AcmeSettings, options.ChallengeResponseReceiver);
+                pfx = await RequestNewCertificate(domainNames, options.AcmeSettings, options.SetChallengeResponse);
                 if (pfx != null)
                 {
                     await options.StoreCertificate(domainNames.First(), pfx);

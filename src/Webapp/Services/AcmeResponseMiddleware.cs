@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using System;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Webapp.Services
 {
@@ -24,22 +25,24 @@ namespace Webapp.Services
         public string[] DomainNames { get; set; }
         public AcmeSettings AcmeSettings { get; set; }
         // public IServiceProvider ApplicationServices { get; set; }
-        public Func<string, string, Task> ChallengeResponseReceiver { get; set; } = (challenge, response) => Task.FromResult(0);
+        public Func<string, Task<string>> GetChallengeResponse { get; set; } = (challenge) => Task.FromResult<string>(null);
+        public Func<string, string, Task> SetChallengeResponse { get; set; } = (challenge, response) => Task.FromResult(0);
         public Func<string, byte[], Task> StoreCertificate { get; set; } = (domainName, certData) => Task.FromResult(0);
-        public Func<string, Task<byte[]>> RetreiveCertificate { get; set; } = (domainName) => Task.FromResult<byte[]>(null);
+        public Func<string, Task<byte[]>> RetrieveCertificate { get; set; } = (domainName) => Task.FromResult<byte[]>(null);
     }
 
     public class AcmeResponseMiddleware
     {
         static readonly PathString startPath = new PathString("/.well-known/acme-challenge");
         private readonly RequestDelegate next;
-        private readonly Func<string, Task<string>> challengeResponder;
+        // private readonly Func<string, Task<string>> challengeResponder;
         private readonly ILogger<AcmeResponseMiddleware> logger;
+        private readonly ICertificateManager certificateManager;
 
-        public AcmeResponseMiddleware(RequestDelegate next, Func<string, Task<string>> challengeResponder, ILogger<AcmeResponseMiddleware> logger)
+        public AcmeResponseMiddleware(RequestDelegate next, ICertificateManager certificateManager, ILogger<AcmeResponseMiddleware> logger)
         {
             this.next = next;
-            this.challengeResponder = challengeResponder;
+            this.certificateManager = certificateManager;
             this.logger = logger;
         }
 
@@ -52,10 +55,7 @@ namespace Webapp.Services
                 string challenge = requestPathId.Value.TrimStart('/');
                 this.logger.LogWarning($"Acme challenge received on {requestPath}, challenge id = {challenge}");
 
-                // var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>($"challenge:{challenge}");
-                // var response = await cacheGrain.Get();
-
-                string response = await challengeResponder(challenge);
+                string response = await certificateManager.GetChallengeResponse(challenge);
 
                 if (!string.IsNullOrEmpty(response))
                 {
@@ -85,9 +85,9 @@ namespace Microsoft.AspNetCore.Hosting
     using Webapp.Services;
     public static class AcmeResponseExtensions
     {
-        public static IApplicationBuilder UseAcmeResponse(this IApplicationBuilder builder, Func<string, Task<string>> challengeResponder)
+        public static IApplicationBuilder UseAcmeResponse(this IApplicationBuilder builder)
         {
-            return builder.UseMiddleware<AcmeResponseMiddleware>(challengeResponder);
+            return builder.UseMiddleware<AcmeResponseMiddleware>();
         }
     }
 }
