@@ -3,7 +3,6 @@ import { Link } from 'react-router';
 import { connect } from 'react-redux';
 import { ApplicationState }  from '../store';
 import * as CounterStore from '../store/Counter';
-import * as WeatherForecasts from '../store/WeatherForecasts';
 
 type CounterProps = CounterStore.CounterState & typeof CounterStore.actionCreators;
 
@@ -12,12 +11,6 @@ class Counter extends React.Component<CounterProps, void> {
         // fetch current data from server
         this.props.request();
     }
-
-    //componentWillReceiveProps(nextProps: CounterProps) {
-    //    // This method runs when incoming props (e.g., route params) change
-    //    this.props.request();
-    //}
-
 
     public render() {
         return <div className="container">

@@ -4,6 +4,7 @@ import { AppThunkAction } from './';
 import { RegisterViewModel } from '../server/RegisterViewModel';
 import * as Server from '../server/User';
 import { browserHistory } from 'react-router';
+import { LOGIN_SUCCESS, LoginSuccessAction } from './Login';
 
 export const REGISTER_REQUEST = 'RegisterRequestAction';
 export const REGISTER_SUCCESS = 'RegisterSuccessAction';
@@ -35,7 +36,7 @@ interface RegisterSuccessAction {
 }
 
 // TODO import Success and Invalid actions from server and handle them
-type KnownAction = RegisterRequestAction | RegisterErrorAction | RegisterSuccessAction;
+type KnownAction = RegisterRequestAction | RegisterErrorAction | RegisterSuccessAction | LoginSuccessAction;
 
 export const actionCreators = {
 
@@ -54,6 +55,7 @@ export const actionCreators = {
 
         if (response.ok) {
             dispatch({ type: REGISTER_SUCCESS, payload: registerModel });
+            dispatch({ type: LOGIN_SUCCESS });
             browserHistory.push('/');
         } else {
             dispatch({ type: REGISTER_ERROR });
@@ -72,6 +74,8 @@ export const reducer: Reducer<RegisterState> = (state: RegisterState, action: Kn
             return { requesting: false, registered: false, errors: {} };
         case REGISTER_SUCCESS:
             return { requesting: false, registered: false, errors: {} };
+        case LOGIN_SUCCESS:
+            return state;
         default:
             const exhaustiveCheck: never = action;
     }

@@ -1,36 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
+    <!--<RuntimeIdentifier>win10-x64</RuntimeIdentifier>-->
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <DebugType>portable</DebugType>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <OutputType>Exe</OutputType>
     <UserSecretsId>Rodos-Secrets</UserSecretsId>
-    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
-    <EnableDefaultContentItems>false</EnableDefaultContentItems>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TypescriptCompileBlocked>true</TypescriptCompileBlocked>
     <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netcoreapp1.1' ">$(PackageTargetFallback);dnxcore50;portable-net45+win8+wp8+wpa81</PackageTargetFallback>
   </PropertyGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="**\*.resx" />
-    <EmbeddedResource Include="compiler\resources\**\*" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="appsettings.json;ClientApp\dist\**\*;Views\**\*;web.config;wwwroot\**\*" Exclude="wwwroot\dist\*.map">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Remove="wwwroot\images\logo.svg" />
-  </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\..\lib\Certes\Certes.csproj" />
     <ProjectReference Include="..\..\lib\Portable.BouncyCastle\Portable.BouncyCastle.csproj" />
-    <!--<ProjectReference Include="..\..\lib\WebSocketManager\WebSocketManager.csproj" />-->
     <ProjectReference Include="..\GrainInterfaces\GrainInterfaces.csproj" />
   </ItemGroup>
-  <ItemGroup>
   
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="1.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="1.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics" Version="1.1.0" />
@@ -60,10 +48,9 @@
     <PackageReference Include="IdentityServer4" Version="1.1.1" />
     <PackageReference Include="IdentityServer4.AspNetIdentity" Version="1.0.0" />
     <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="1.0.5" />
-    <PackageReference Include="System.Runtime" Version="4.3.0" />
-    <PackageReference Include="System.Collections" Version="4.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="1.1.0" />
   </ItemGroup>
+
   <ItemGroup>
     <None Update="ClientApp\server\ApiResult.ts">
       <CustomToolNamespace>Models\ApiResult.cs</CustomToolNamespace>
@@ -126,12 +113,41 @@
       <CustomToolNamespace>Models\Subscribe.cs</CustomToolNamespace>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Files not to show in IDE -->
+    <!--<None Remove="yarn.lock" />-->
+
+    <!-- Files not to publish (note that the 'dist' subfolders are re-added below) -->
+    <Content Remove="ClientApp\**" />
+  </ItemGroup>
+
+  <Target Name="RunWebpack" AfterTargets="ComputeFilesToPublish">
+    <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
+    <Exec Command="npm install" />
+    <Exec Command="node node_modules/webpack/bin/webpack.js --env.prod" />
+
+    <!-- Include the newly-built files in the publish output -->
+    <ItemGroup>
+      <DistFiles Include="wwwroot\dist\**; ClientApp\dist\**" />
+      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+        <RelativePath>%(DistFiles.Identity)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)'=='Debug'">
+      <NpmFiles Include="node_modules\**;package.json;webpack.config.js;tsconfig.json;postcss.config.js;.babelrc" />
+      <ResolvedFileToPublish Include="@(NpmFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+        <RelativePath>%(NpmFiles.Identity)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
   </PropertyGroup>
-  <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish" Condition=" '$(IsCrossTargetingBuild)' != 'true' ">
-    <Exec Command="npm install" />
-    <Exec Command="node node_modules/webpack/bin/webpack.js --env.prod" />
-  </Target>
-  <Target Name="PostpublishScript" AfterTargets="Publish" Condition=" '$(IsCrossTargetingBuild)' != 'true' " />
+
 </Project>

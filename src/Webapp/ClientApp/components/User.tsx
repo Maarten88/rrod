@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router';
+import { Grid } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { ApplicationState }  from '../store';
 import * as UserState from '../store/User';
@@ -17,12 +18,12 @@ class User extends React.Component<UserProps, void> {
     }
 
     public render() {
-        return <div>
+        return <Grid>
             <h1>User</h1>
             <p>This component demonstrates fetching data from the server and working with URL parameters.</p>
-            <p>is authenticated: {this.props.isAuthenticated ? 'Yes!' : ':-(' }</p>
-            <p>email: {this.props.email}</p>
-        </div>;
+            <p>User is authenticated: {this.props.isAuthenticated ? 'Yes! :-)' : 'No :-(' }</p>
+            <p>User email: {this.props.email}</p>
+        </Grid>;
     }
 }
 

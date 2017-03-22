@@ -1,4 +1,3 @@
-import * as WeatherForecasts from './WeatherForecasts';
 import * as Counter from './Counter';
 import * as Footer from './Footer';
 import * as Contact from './Contact';
@@ -19,8 +18,7 @@ export interface ApplicationState {
     register: Register.RegisterState,
     counter: Counter.CounterState,
     footer: Footer.FooterState,
-    contact: Contact.ContactState,
-    weatherForecasts: WeatherForecasts.WeatherForecastsState
+    contact: Contact.ContactState
 }
 
 // Whenever an action is dispatched, Redux will update each top-level application state property using
@@ -35,8 +33,7 @@ export const reducers = {
     register: Register.reducer,
     counter: Counter.reducer,
     footer: Footer.reducer,
-    contact: Contact.reducer,
-    weatherForecasts: WeatherForecasts.reducer
+    contact: Contact.reducer
 };
 
 // This type can be used as a hint on action creators so that its 'dispatch' and 'getState' params are

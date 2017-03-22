@@ -1,24 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>netstandard1.6</TargetFramework>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <DebugType>portable</DebugType>
     <AssemblyName>GrainInterfaces</AssemblyName>
     <PackageId>GrainInterfaces</PackageId>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="**\*.cs" />
-    <EmbeddedResource Include="**\*.resx" />
-    <EmbeddedResource Include="compiler\resources\**\*" />
-  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Reactive.Linq" Version="3.1.1" />
     <PackageReference Include="Microsoft.Orleans.OrleansCodeGenerator" Version="2.0.0-*" />
     <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0-*" />
   </ItemGroup>
+  
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
   </PropertyGroup>
+
 </Project>

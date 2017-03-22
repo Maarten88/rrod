@@ -134,7 +134,7 @@ var clientBundleConfig = merge(sharedConfig(), {
 
 // Configuration for server-side (prerendering) bundle suitable for running in Node
 var serverBundleConfig = merge(sharedConfig(), {
-    entry: { 'main-server': './ClientApp/boot-server.tsx' },
+    entry: { 'main-server': ['babel-polyfill', './ClientApp/boot-server.tsx'] },
     output: {
         libraryTarget: 'commonjs',
         path: path.join(__dirname, './ClientApp/dist')
