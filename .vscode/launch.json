@@ -2,13 +2,32 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "type": "node",
+            "request": "attach",
+            "name": "Attach (Legacy Protocol)",
+            "port": 5858,
+            "protocol": "legacy"
+        },
+        {
+            "name": "Launch OrleansHost",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceRoot}\\src\\OrleansHost\\bin\\Debug\\netcoreapp1.1\\OrleansHost.dll",
             "args": [],
             "cwd": "${workspaceRoot}\\src\\OrleansHost",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Launch Webapp",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceRoot}\\src\\Webapp\\bin\\Debug\\netcoreapp1.1\\Webapp.dll",
+            "args": [],
+            "cwd": "${workspaceRoot}\\src\\Webapp",
             "console": "internalConsole",
             "stopAtEntry": false,
             "internalConsoleOptions": "openOnSessionStart"
