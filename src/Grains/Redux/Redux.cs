@@ -46,8 +46,9 @@ namespace Grains.Redux
         
         public IDisposable Subscribe(IObserver<TState> observer)
         {
-            return _stateSubject
+            var subscription = _stateSubject
                 .Subscribe(observer);
+            return subscription;
         }
 
         private Dispatcher ApplyMiddlewares(params Middleware<TState>[] middlewares)

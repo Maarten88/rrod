@@ -15,24 +15,45 @@ namespace Grains
         IStreamProvider streamProvider;
         StreamSubscriptionHandle<IAction> actionStreamSubscription;
         IDisposable storeSubscription;
+        IAsyncStream<IAction> actionsToClientStream;
 
         public override async Task OnActivateAsync()
         {
-            // Publish all user state updates to a stream that other grains can subscribe to
-            this.streamProvider = this.GetStreamProvider("Default");
-            var counterStateStream = this.streamProvider.GetStream<CounterState>(this.GetPrimaryKey(), "CounterState");
-            this.storeSubscription = this.Store.Subscribe(async (CounterState state) => {
-                await counterStateStream.OnNextAsync(state);
-            });
+            // Do this first, it initializes the Store!
+            await base.OnActivateAsync();
 
-            // Subscribe to Actions streamed from the client, and handle them.
-            // These actions can't be directly dispatched, they need to be interpreted and can cause new actions to be dispatched
-            var actionStream = streamProvider.GetStream<IAction>(this.GetPrimaryKey(), "ActionsFromClient");
-            actionStreamSubscription = await actionStream.SubscribeAsync(async (action, st) => {
+            this.streamProvider = this.GetStreamProvider("Default");
+            var actionsFromClientStream = streamProvider.GetStream<IAction>(this.GetPrimaryKey(), "ActionsFromClient");
+            // Subscribe to Actions streamed from the client, and process them.
+            // These actions can't be directly dispatched, they need to be interpreted and can cause other actions to be dispatched
+            actionStreamSubscription = await actionsFromClientStream.SubscribeAsync(async (action, st) => {
                 await this.Process(action);
             });
-            await base.OnActivateAsync();
+
+            this.actionsToClientStream = this.streamProvider.GetStream<IAction>(this.GetPrimaryKey(), "ActionsToClient");
+
+            // Subscribe to state updates as they happen on the server, and publish them using the SyncCounterState action
+            this.storeSubscription = this.Store.Subscribe(
+                async (CounterState state) => {
+                    if (state != null)
+                        await this.actionsToClientStream.OnNextAsync(new SyncCounterStateAction { CounterState = state });
+                },
+                (Exception e) => {
+                    GetLogger().TrackException(e);
+                });
+
         }
+
+        public override async Task OnDeactivateAsync()
+        {
+            // clean up when grain goes away (nobody is looking at us anymore)
+            this.storeSubscription.Dispose();
+            this.storeSubscription = null;
+            await this.actionStreamSubscription.UnsubscribeAsync();
+            this.actionStreamSubscription = null;
+            await base.OnDeactivateAsync();
+        }
+
         public CounterGrain(ReduxTableStorage<CounterState> storage) : base(CounterState.Reducer, storage)
         {
         }
@@ -55,16 +76,20 @@ namespace Grains
                 throw new Exception("Can't start: already started");
 
             await this.Dispatch(new StartCounterAction());
+            await this.actionsToClientStream.OnNextAsync(new CounterStartedAction());
 
-            var stream = this.streamProvider.GetStream<IAction>(this.GetPrimaryKey(), "ActionsToClient");
             this.timer = this.RegisterTimer(async (state) => {
                 var action = new IncrementCounterAction();
+                // This sends the action to the clients for processing there
+                await this.actionsToClientStream.OnNextAsync(action);
+
+                // This processes the action here on the server, and also sends the syncstate to make sure the outcome is the same
+                // The order of events is important here
                 await this.Dispatch(action);
                 await this.WriteStateAsync();
-                await stream.OnNextAsync(action);
-            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
+            }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
 
-            await stream.OnNextAsync(new CounterStartedAction());
+            await this.actionsToClientStream.OnNextAsync(new CounterStartedAction());
         }
 
         public async Task StopCounterTimer()
@@ -73,11 +98,9 @@ namespace Grains
                 throw new Exception("Can't stop: not started");
 
             await this.Dispatch(new StopCounterAction());
-
+            await this.actionsToClientStream.OnNextAsync(new CounterStoppedAction());
             this.timer.Dispose();
             this.timer = null;
-            var stream = this.streamProvider.GetStream<IAction>(this.GetPrimaryKey(), "ActionsToClient");
-            await stream.OnNextAsync(new CounterStoppedAction());
         }
 
         public async Task Process(IAction action)

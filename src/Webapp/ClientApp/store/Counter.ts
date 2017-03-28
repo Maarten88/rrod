@@ -27,16 +27,9 @@ const RECEIVE_COUNTER = 'ReceiveCounterAction';
 interface RequestCounterAction { type: 'RequestCounterAction' }
 interface ReceiveCounterAction { type: 'ReceiveCounterAction', payload: Server.CounterState }
 
-//interface IncrementCountAction { type: 'INCREMENT_COUNT' }
-//interface DecrementCountAction { type: 'DECREMENT_COUNT' }
-//interface StartCounterAction { type: 'START_COUNTER' }
-//interface CounterStartedAction { type: 'COUNTER_STARTED' }
-//interface StopCounterAction { type: 'STOP_COUNTER' }
-//interface CounterStoppedAction { type: 'COUNTER_STOPPED' }
-
 // Declare a 'discriminated union' type. This guarantees that all references to 'type' properties contain one of the
 // declared type strings (and not any other arbitrary string).
-type KnownAction = RequestCounterAction | ReceiveCounterAction | Server.CounterStartedAction | Server.CounterStoppedAction | Server.DecrementCounterAction | Server.IncrementCounterAction | Server.StartCounterAction | Server.StopCounterAction;
+type KnownAction = RequestCounterAction | ReceiveCounterAction | Server.CounterStartedAction | Server.CounterStoppedAction | Server.DecrementCounterAction | Server.IncrementCounterAction | Server.StartCounterAction | Server.StopCounterAction | Server.SyncCounterStateAction;
 
 // ----------------
 // ACTION CREATORS - These are functions exposed to UI components that will trigger a state transition.
@@ -122,6 +115,8 @@ export const reducer: Reducer<CounterState> = (state: CounterState, action: Know
             return { ...state, transitioning: true };
         case Server.COUNTER_STOPPED:
             return { ...state, transitioning: false, started: false };
+        case Server.SYNC_COUNTER_STATE:
+            return { ...action.payload.counterState, transitioning: false };
         default:
             // The following line guarantees that every action in the KnownAction union has been covered by a case above
             const exhaustiveCheck: never = action;

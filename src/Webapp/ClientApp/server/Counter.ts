@@ -7,6 +7,7 @@ export const START_COUNTER = 'StartCounterAction';
 export const COUNTER_STARTED = 'CounterStartedAction';
 export const STOP_COUNTER = 'StopCounterAction';
 export const COUNTER_STOPPED = 'CounterStoppedAction';
+export const SYNC_COUNTER_STATE = 'SyncCounterStateAction';
 
 
 export interface IncrementCounterAction { 
@@ -31,6 +32,13 @@ export interface StopCounterAction {
 
 export interface CounterStoppedAction { 
 	type: 'CounterStoppedAction'; 
+}
+
+export interface SyncCounterStateAction { 
+	type: 'SyncCounterStateAction'; 
+	payload: {
+		counterState: CounterState;
+	}
 }
 
 

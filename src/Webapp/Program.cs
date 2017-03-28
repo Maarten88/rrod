@@ -21,13 +21,12 @@ using Microsoft.AspNetCore.SpaServices.Webpack;
 using Webapp.Controllers;
 using Webapp.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Identity;
 using IdentityModel;
 using System.IdentityModel.Tokens;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Webapp
 {
@@ -57,13 +56,12 @@ namespace Webapp
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
-
             // Initialize the connection to the OrleansHost process
             var orleansClientConfig = ClientConfiguration.LocalhostSilo();
             orleansClientConfig.DeploymentId = Configuration["DeploymentId"];
             orleansClientConfig.DataConnectionString = Configuration.GetConnectionString("DataConnectionString");
             orleansClientConfig.AddSimpleMessageStreamProvider("Default");
-            orleansClientConfig.DefaultTraceLevel = Orleans.Runtime.Severity.Warning;
+            orleansClientConfig.DefaultTraceLevel = Severity.Warning;
             orleansClientConfig.TraceFileName = "";
             do
             {
@@ -149,7 +147,7 @@ namespace Webapp
                     .UseEnvironment(environment)
                     .ConfigureServices(services => {
                         services.AddSingleton<IConfiguration>(Configuration);
-                        services.Configure<AcmeSettings>(Configuration.GetSection("AcmeSettings"));
+                        services.Configure<AcmeSettings>(Configuration.GetSection(nameof(AcmeSettings)));
 
                         // Register a certitificate manager, supplying methods to store and retreive certificates and acme challenge responses
                         services.AddAcmeCertificateManager(acmeOptions);
@@ -182,7 +180,7 @@ namespace Webapp
                 .ConfigureServices(services =>
                 {
                     services.AddSingleton<IConfiguration>(Configuration);
-                    services.Configure<AcmeSettings>(Configuration.GetSection("AcmeSettings"));
+                    services.Configure<AcmeSettings>(Configuration.GetSection(nameof(AcmeSettings)));
 
                     // TODO DotNetCore 2.0 configure the cookie name: https://github.com/aspnet/Mvc/commit/17dc23a024c1219ec58c48199f8d4f23117cf348
                     // services.Configure<CookieTempDataProviderOptions>(options => options.CookieName = "SESSION");
@@ -192,6 +190,7 @@ namespace Webapp
 
                     // Add a basic Orleans-based distributed cache
                     services.AddOrleansCache();
+                   
 
                     if (secureUrls.Any())
                     {
@@ -249,7 +248,7 @@ namespace Webapp
                     // services.AddWebSocketManager();
                     
                     services.AddNodeServices(options => {
-                        if ("development".Equals(environment, StringComparison.OrdinalIgnoreCase))
+                        if (isDevelopment)
                         {
                             options.LaunchWithDebugging = true;
                             options.DebuggingPort = 5858;
@@ -274,8 +273,7 @@ namespace Webapp
                 })
                 .Configure(app =>
                 {
-                    var env = app.ApplicationServices.GetService<IHostingEnvironment>();
-                    if (env.IsDevelopment())
+                    if (isDevelopment)
                     {
                         app.UseDeveloperExceptionPage();
                         app.UseWebpackDevMiddleware(new WebpackDevMiddlewareOptions
@@ -283,7 +281,6 @@ namespace Webapp
                             HotModuleReplacement = true,
                             HotModuleReplacementServerPort = 6000,
                             ReactHotModuleReplacement = true,
-
                         });
                     }
                     else
@@ -292,11 +289,9 @@ namespace Webapp
                     }
 
                     app.UseIdentity();
-
                     app.UseIdentityServer();
 
                     JwtSecurityTokenHandler.InboundClaimTypeMap.Clear();
-
                     app.UseIdentityServerAuthentication(new IdentityServerAuthenticationOptions
                     {
                         Authority = urls.First(),
@@ -327,110 +322,10 @@ namespace Webapp
                         }
                     });
 
-                    app.UseOpenIdConnectAuthentication(new OpenIdConnectOptions
-                    {
-                        AutomaticAuthenticate = true,
-
-                        // Note: setting the Authority allows the OIDC client middleware to automatically
-                        // retrieve the identity provider's configuration and spare you from setting
-                        // the different endpoints URIs or the token validation parameters explicitly.
-                        Authority = urls.First(),
-                        AuthenticationScheme = OpenIdConnectDefaults.AuthenticationScheme,
-                        // Note: these settings must match the application details
-                        // inserted in the database at the server level.
-                        ClientId = urls.First(),
-                        ClientSecret = "secret",
-                        PostLogoutRedirectUri = "/signedout",
-
-                        RequireHttpsMetadata = false,
-                        GetClaimsFromUserInfoEndpoint = true,
-                        SaveTokens = true,
-
-                        // Use the authorization code flow.
-                        ResponseType = OpenIdConnectResponseType.CodeIdToken,
-                        AuthenticationMethod = OpenIdConnectRedirectBehavior.RedirectGet,
-                        CallbackPath = "/signin-oidc", // this is the default value
-                        Resource = urls.First(),
-
-                        Scope = { "openid", "profile", "email", "roles", "offline_access" },
-                        Events = new OpenIdConnectEvents()
-                        {
-                            OnUserInformationReceived = async ctx =>
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnTokenValidated = async ctx =>
-                            {
-                                // var identity = ctx.Ticket.Principal.Identity as ClaimsIdentity;
-                                await Task.FromResult(0);
-                            },
-                            OnAuthenticationFailed = async ctx =>
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnAuthorizationCodeReceived = async ctx =>
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnTokenResponseReceived = async ctx =>
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnRedirectToIdentityProvider = async ctx =>
-                            {
-                                await Task.FromResult(0);
-                            }
-                        }
-                    });
-
                     // if a .gz version of a static file is available (created by webpack), send that one
                     app.UseCompressedStaticFiles();
                     app.UseStaticFiles();
                     app.UseResponseCompression();
-
-                    //var jwtIssuerOptions = app.ApplicationServices.GetRequiredService<IOptions<JwtIssuerOptions>>();
-                    //var tokenValidationParameters = new TokenValidationParameters
-                    //{
-                    //    ValidateIssuer = true,
-                    //    ValidIssuer = jwtIssuerOptions.Value.Issuer,
-
-                    //    ValidateAudience = true,
-                    //    ValidAudiences = new[] { jwtIssuerOptions.Value.Audience }, //  jwtIssuerOptions.Value.Audience,
-
-                    //    ValidateIssuerSigningKey = true,
-                    //    // IssuerSigningKey = new X509SecurityKey(signingCert),
-
-                    //    RequireExpirationTime = true,
-                    //    ValidateLifetime = true,
-
-                    //    ClockSkew = TimeSpan.FromMinutes(5)
-                    //};
-
-                    //app.UseJwtBearerAuthentication(new JwtBearerOptions
-                    //{
-                    //    AutomaticAuthenticate = true,
-                    //    AutomaticChallenge = true,
-                    //    RequireHttpsMetadata = false,
-                    //    // Audience = jwtIssuerOptions.Value.Audience,
-                    //    Authority = urls.First(),
-                    //    TokenValidationParameters = tokenValidationParameters,
-                        
-                    //    Events = new JwtBearerEvents
-                    //    {
-                    //        OnAuthenticationFailed = async (ctx) => {
-                    //            await Task.FromResult(0);
-                    //        },
-                    //        OnMessageReceived = async (ctx) => {
-                    //            await Task.FromResult(0);
-                    //        },
-                    //        OnChallenge = async (ctx) => {
-                    //            await Task.FromResult(0);
-                    //        },
-                    //        OnTokenValidated = async (ctx) => {
-                    //            await Task.FromResult(0);
-                    //        }
-                    //    }
-                    //});
 
                     app.UseWebSockets();
                     app.Map("/actions", ap => ap.UseMiddleware<WebSocketHandlerMiddleware>(new ActionsHandler()));
@@ -458,7 +353,7 @@ namespace Webapp
 
                         //if (acmeHost != null)
                         //{
-                        //    // How to stop the acme listener? Kestrel can't bind to a url, so we need to stop the acme listener to free up port 80 if we want to bind our site to that port too
+                        //    // How to stop the acme listener? Kestrel doesn't support SNI, so we need to stop the acme listener to free up port 80 if we want to bind our regular site to that port too
                         //    acmeHost.Dispose();
                         //    acmeHost = null;
                         //}

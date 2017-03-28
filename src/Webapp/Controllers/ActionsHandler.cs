@@ -157,11 +157,9 @@ namespace Webapp.Controllers
 
         public async Task OnConnected(WebSocket socket, Guid id)
         {
-            // await base.OnConnected(socket);
-            // var socketId = Guid.NewGuid(); // todo: get from connection parameter
             var streamProvider = GrainClient.GetStreamProvider("Default");
-            var stream = streamProvider.GetStream<IAction>(id, "ActionsToClient");
-            var streamSubscription = await stream.SubscribeAsync(
+            var actionsStream = streamProvider.GetStream<IAction>(id, "ActionsToClient");
+            var actionsSubscription = await actionsStream.SubscribeAsync(
                 // subscribe to the stream of actions coming from grains that need to go to the client
                 async (action, st) => {
                     // Cast it to Redux Javascript format. The ActionName method is mirrored in the Typewriter Redux template, so typescript knows the same string constants
@@ -169,7 +167,7 @@ namespace Webapp.Controllers
                     await SendMessageAsync(socket, JsonConvert.SerializeObject(message));
                 });
 
-            this.socketSubscriptions[socket] = streamSubscription;
+            this.socketSubscriptions[socket] = actionsSubscription;
             //if (!this.socketSubscriptions.TryAdd(socket, streamSubscription))
             //    throw new Exception("Can't add subscription!");
         }

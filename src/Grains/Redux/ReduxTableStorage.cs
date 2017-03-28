@@ -252,8 +252,8 @@ namespace Grains.Redux
                     }
                     catch (Exception exc)
                     {
-                        logger.Error(103, String.Format("Exception reading actions: Table={0}, PartitionKey={1}, Exception={2}:{3}",
-                                tableName, partitionKey, exc.GetType().Name), exc);
+                        logger.Error(103, String.Format("Exception reading actions: Table={0}, PartitionKey={1}, Exception={2}: {3}",
+                                tableName, partitionKey, exc.GetType().Name, exc.Message), exc);
                         // no exception handling required.  If this method throws,
                         // Rx will catch it and call observer.OnError() for us.
                         throw;

@@ -24,6 +24,11 @@ namespace GrainInterfaces
     public class CounterStoppedAction : IAction
     { }
 
+    public class SyncCounterStateAction : IAction
+    {
+        public CounterState CounterState { get; set; }
+    }
+
     public class CounterState
     {
         public int Count { get; set; }
@@ -61,6 +66,9 @@ namespace GrainInterfaces
 
                 case StopCounterAction a:
                     return new CounterState(state) { Started = false };
+
+                case SyncCounterStateAction a:
+                    return a.CounterState;
 
                 default:
                     return state;

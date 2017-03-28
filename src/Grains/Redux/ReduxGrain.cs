@@ -11,14 +11,13 @@ namespace Grains.Redux
     {
         protected ReduxGrainStore<TState> Store { get; private set; }
 
-        private Reducer<TState> reducer;
-        private ReduxTableStorage<TState> storage;
+        private readonly Reducer<TState> reducer;
+        private readonly ReduxTableStorage<TState> storage;
         private string tableKey;
 
         public ReduxGrain(Reducer<TState> reducer, ReduxTableStorage<TState> storage)
         {
             this.reducer = reducer;
-            this.Store = new ReduxGrainStore<TState>(reducer);
             this.storage = storage;
         }
 
@@ -47,7 +46,8 @@ namespace Grains.Redux
             Store.GetState().UnsavedActions.Clear();
         }
 
-        public async Task ReadStateAsync()
+        // Overwrites the Store, canceling potential subscriptions, therefore marked private
+        private async Task ReadStateAsync()
         {
             var state = Tuple.Create<TState, uint>(null, 0);
             var storageActonObservable = storage.ReadObservable(this.tableKey, this.GetLogger());

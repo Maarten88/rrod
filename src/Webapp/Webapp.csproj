@@ -22,8 +22,9 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="1.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="1.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="1.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="1.1.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="1.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="1.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="1.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="1.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Https" Version="1.1.0" />
