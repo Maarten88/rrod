@@ -35,15 +35,15 @@ type KnownAction = RequestCounterAction | ReceiveCounterAction | Server.CounterS
 // ACTION CREATORS - These are functions exposed to UI components that will trigger a state transition.
 // They don't directly mutate state, but they can have external side-effects (such as loading data).
 
-async function postActionToServer(action: any, xsrfToken: string) {
-    let response = await fetch('/action', {
+async function postEffect(url: string, xsrfToken: string, data: any = {}) {
+    let response = await fetch(url, {
         method: 'POST',
         credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
             'X-XSRF-TOKEN': xsrfToken
         },
-        body: JSON.stringify(action)
+        body: JSON.stringify(data)
     });
     return response;
 }
@@ -71,25 +71,25 @@ export const actionCreators = {
     increment: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
         dispatch({ type: Server.INCREMENT_COUNTER });
         var state = getState();
-        let response = await postActionToServer({ type: Server.INCREMENT_COUNTER }, state.session.xsrfToken);
+        let response = await postEffect('/incrementcounter', state.session.xsrfToken);
         console.log(response);
     },
     decrement: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
         dispatch({ type: Server.DECREMENT_COUNTER });
         var state = getState();
-        let response = await postActionToServer({ type: Server.DECREMENT_COUNTER }, state.session.xsrfToken);
+        let response = await postEffect('/decrementcounter', state.session.xsrfToken);
         console.log(response);
     },
     start: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
         dispatch({ type: Server.START_COUNTER });
         var state = getState();
-        let response = await postActionToServer({ type: Server.START_COUNTER }, state.session.xsrfToken);
+        let response = await postEffect('/startcounter', state.session.xsrfToken);
         console.log(response);
     },
     stop: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
         dispatch({ type: Server.STOP_COUNTER });
         var state = getState();
-        let response = await postActionToServer({ type: Server.STOP_COUNTER }, state.session.xsrfToken);
+        let response = await postEffect('/stopcounter', state.session.xsrfToken);
         console.log(response);
     }
 };
