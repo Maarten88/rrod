@@ -248,11 +248,12 @@ namespace Webapp
                     // services.AddWebSocketManager();
                     
                     services.AddNodeServices(options => {
-                        if (isDevelopment)
-                        {
-                            options.LaunchWithDebugging = true;
-                            options.DebuggingPort = 5858;
-                        }
+                        // Debugging is currently broken in NodeServices with recent nodejs versions
+                        //if (isDevelopment)
+                        //{
+                        //    options.LaunchWithDebugging = true;
+                        //    options.DebuggingPort = 5858;
+                        //}
                         options.NodeInstanceOutputLogger = loggerFactory.CreateLogger("Node Console Logger");
                     });
                     // Add framework services.
