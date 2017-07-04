@@ -5,19 +5,19 @@ import { AppThunkAction } from './';
 // -----------------
 // STATE - This defines the type of data maintained in the Redux store.
 
-export interface ContactState {
-    form: ContactForm;
-    isSubmitting: boolean;
-    submitted: boolean;
-    result?: string;
-}
-
 export interface ContactForm {
     firstName?: string;
     lastName?: string;
     email?: string;
     phone?: string;
     message?: string;
+}
+
+export interface ContactState {
+    form: ContactForm;
+    isSubmitting: boolean;
+    submitted: boolean;
+    result?: string;
 }
 
 // -----------------
@@ -104,7 +104,7 @@ export const reducer: Reducer<ContactState> = (state: ContactState, action: Know
             };
         default:
             // The following line guarantees that every action in the KnownAction union has been covered by a case above
-            const exhaustiveCheck: never = action;
+            // const exhaustiveCheck: never = action;
     }
 
     return state || unloadedState;

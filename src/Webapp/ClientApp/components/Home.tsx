@@ -4,7 +4,7 @@ import ScrollEffect from '../lib/scroll-effect';
 import Fullscreen from '../lib/fullscreen';
 import Footer from './Footer';
 
-export default class Home extends React.Component<void, void> {
+export default class Home extends React.Component<{}> {
     public render() {
           return <div className="container-fluid">
             <Fullscreen>

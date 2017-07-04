@@ -12,7 +12,6 @@ namespace Grains
     public class CounterGrain : ReduxGrain<CounterState>, ICounterGrain
     {
         IDisposable timer = null;
-        IStreamProvider streamProvider;
         StreamSubscriptionHandle<IAction> actionStreamSubscription;
         IDisposable storeSubscription;
         IAsyncStream<IAction> actionsToClientStream;
@@ -22,7 +21,7 @@ namespace Grains
             // Do this first, it initializes the Store!
             await base.OnActivateAsync();
 
-            this.streamProvider = this.GetStreamProvider("Default");
+            var streamProvider = this.GetStreamProvider("Default");
             var actionsFromClientStream = streamProvider.GetStream<IAction>(this.GetPrimaryKey(), "ActionsFromClient");
             // Subscribe to Actions streamed from the client, and process them.
             // These actions can't be directly dispatched, they need to be interpreted and can cause other actions to be dispatched
@@ -30,7 +29,7 @@ namespace Grains
                 await this.Process(action);
             });
 
-            this.actionsToClientStream = this.streamProvider.GetStream<IAction>(this.GetPrimaryKey(), "ActionsToClient");
+            this.actionsToClientStream = streamProvider.GetStream<IAction>(this.GetPrimaryKey(), "ActionsToClient");
 
             // Subscribe to state updates as they happen on the server, and publish them using the SyncCounterState action
             this.storeSubscription = this.Store.Subscribe(
@@ -77,6 +76,7 @@ namespace Grains
 
             await this.Dispatch(new StartCounterAction());
             await this.actionsToClientStream.OnNextAsync(new CounterStartedAction());
+            await this.WriteStateAsync();
 
             this.timer = this.RegisterTimer(async (state) => {
                 var action = new IncrementCounterAction();
@@ -99,6 +99,7 @@ namespace Grains
 
             await this.Dispatch(new StopCounterAction());
             await this.actionsToClientStream.OnNextAsync(new CounterStoppedAction());
+            await this.WriteStateAsync();
             this.timer.Dispose();
             this.timer = null;
         }

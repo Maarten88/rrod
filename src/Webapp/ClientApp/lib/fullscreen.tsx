@@ -7,7 +7,7 @@ interface Dimensions {
 
 var getDimensions = () => ({ height: window.innerHeight - 50 + 'px' });
 
-export default class FullScreen extends React.Component<void, Dimensions> {
+export default class FullScreen extends React.Component<{}, Dimensions> {
     constructor(props) {
         super(props);
         this.state = { height: '100vh' };

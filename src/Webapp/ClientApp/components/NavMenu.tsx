@@ -12,7 +12,7 @@ interface NavMenuProps {
     roles: string[];
 }
 
-class NavMenu extends React.Component<NavMenuProps, void> {
+class NavMenu extends React.Component<NavMenuProps> {
     public render() {
         return <Navbar fixedTop={true}>
             <Navbar.Header>

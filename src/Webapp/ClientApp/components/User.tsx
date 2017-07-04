@@ -7,7 +7,7 @@ import * as UserState from '../store/User';
 
 type UserProps = UserState.UserModel & typeof UserState.actionCreators  
 
-class User extends React.Component<UserProps, void> {
+class User extends React.Component<UserProps> {
     componentWillMount() {
         // This method runs when the component is first added to the page
         // this.props.getUser();

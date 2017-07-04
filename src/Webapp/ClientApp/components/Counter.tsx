@@ -6,7 +6,7 @@ import * as CounterStore from '../store/Counter';
 
 type CounterProps = CounterStore.CounterState & typeof CounterStore.actionCreators;
 
-class Counter extends React.Component<CounterProps, void> {
+class Counter extends React.Component<CounterProps> {
     componentWillMount() {
         // fetch current data from server
         this.props.request();
