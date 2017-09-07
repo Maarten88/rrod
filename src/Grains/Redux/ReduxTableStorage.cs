@@ -112,7 +112,7 @@ namespace Grains.Redux
 
                             actionTypeLookup = actionTypes.ToDictionary(t => t.Name).ToImmutableDictionary();
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             throw new Exception("Reflection failed! ");
                         }
@@ -306,7 +306,7 @@ namespace Grains.Redux
 
         public Task Close()
         {
-            return TaskDone.Done;
+            return Task.CompletedTask;
         }
     }
 }

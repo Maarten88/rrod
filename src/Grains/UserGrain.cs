@@ -44,7 +44,7 @@ namespace Grains
         {
             base.Dispatch(action);
             if (delaySave)
-                return TaskDone.Done;
+                return Task.CompletedTask;
             else
                 return this.WriteStateAsync();
         }

@@ -8,17 +8,13 @@ using System.ComponentModel.DataAnnotations;
 namespace Webapp.Account
 {
     [JsonObject]
-    public class LoginInputModel
+    public class LoginResponseModel : ApiModel
     {
-        [Required]
-        public string Email { get; set; }
-        [Required]
-        public string Password { get; set; }
-
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool RememberLogin { get; set; }
-
+        public bool IsLockedOut { get; set; } = false;
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string ReturnUrl { get; set; }
+        public bool RequiresTwoFactor { get; set; } = false;
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool IsNotAllowed { get; set; } = false;
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Orleans;
 using Orleans.Concurrency;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Webapp.Services
@@ -16,19 +17,19 @@ namespace Webapp.Services
         }
         public byte[] Get(string key) => this.GetAsync(key).Result;
 
-        public async Task<byte[]> GetAsync(string key) => (await this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Get()).Value;
+        public async Task<byte[]> GetAsync(string key, CancellationToken token = default(CancellationToken)) => (await this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Get()).Value;
 
         public void Refresh(string key) => this.RefreshAsync(key).Wait();
 
-        public Task RefreshAsync(string key) => this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Refresh();
+        public Task RefreshAsync(string key, CancellationToken token = default(CancellationToken)) => this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Refresh();
 
         public void Remove(string key) => this.RefreshAsync(key).Wait();
 
-        public Task RemoveAsync(string key) => this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Clear();
+        public Task RemoveAsync(string key, CancellationToken token = default(CancellationToken)) => this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Clear();
 
         public void Set(string key, byte[] value, DistributedCacheEntryOptions options) => this.SetAsync(key, value, options).Wait();
 
-        public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options)
+        public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options, CancellationToken token = default(CancellationToken))
         {
             var creationTime = DateTimeOffset.UtcNow;
             var absoluteExpiration = GetAbsoluteExpiration(creationTime, options);
