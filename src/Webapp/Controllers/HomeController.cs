@@ -28,6 +28,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using System.Security.Cryptography;
 
 namespace Webapp.Controllers
 {
@@ -48,16 +49,26 @@ namespace Webapp.Controllers
             this.loggerFactory = loggerFactory;
 
             // Create session id in an client-unreadable cookie
-            var data = cookie.LoadTempData(httpContextAccessor.HttpContext);
-            if (data.TryGetValue("session", out object id) && (id is Guid))
+            IDictionary<string, object> cookieData;
+            try
+            {
+                cookieData = cookie.LoadTempData(httpContextAccessor.HttpContext);
+            }
+            catch (CryptographicException)
+            {
+                // Server key changed?
+                cookieData = new Dictionary<string, object>();
+            }
+
+            if (cookieData.TryGetValue("session", out object id) && (id is Guid))
             {
                 this.sessionId = (Guid)id;
             }
             else
             {
                 // generate a new session id
-                data["session"] = this.sessionId = Guid.NewGuid();
-                cookie.SaveTempData(httpContextAccessor.HttpContext, data);
+                cookieData["session"] = this.sessionId = Guid.NewGuid();
+                cookie.SaveTempData(httpContextAccessor.HttpContext, cookieData);
             }
         }
 

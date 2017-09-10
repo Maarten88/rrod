@@ -1,32 +1,31 @@
-using System;
-using System.IO;
-using System.Threading;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Orleans;
-using Orleans.Runtime;
-using Orleans.Runtime.Configuration;
-using Microsoft.Extensions.Logging;
-using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Builder;
-using Webapp.Services;
 using GrainInterfaces;
-using Orleans.Concurrency;
+using IdentityModel;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.SpaServices.Webpack;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Microsoft.AspNetCore.ResponseCompression;
+using Orleans;
+using Orleans.Concurrency;
+using Orleans.Runtime;
+using Orleans.Runtime.Configuration;
+using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.IO.Compression;
-using Microsoft.AspNetCore.SpaServices.Webpack;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Webapp.Controllers;
 using Webapp.Identity;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.AspNetCore.Identity;
-using IdentityModel;
-using System.IdentityModel.Tokens;
-using Microsoft.Extensions.Caching.Distributed;
+using Webapp.Services;
 
 namespace Webapp
 {
@@ -48,7 +47,7 @@ namespace Webapp
 
             if (builder.GetFileProvider().GetFileInfo("Webapp.csproj").Exists)
             {
-                builder.AddUserSecrets();
+                builder.AddUserSecrets<Program>();
             }
 
             Configuration = builder.Build();
@@ -292,7 +291,7 @@ namespace Webapp
                     app.UseIdentity();
                     app.UseIdentityServer();
 
-                    JwtSecurityTokenHandler.InboundClaimTypeMap.Clear();
+                    JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
                     app.UseIdentityServerAuthentication(new IdentityServerAuthenticationOptions
                     {
                         Authority = urls.First(),

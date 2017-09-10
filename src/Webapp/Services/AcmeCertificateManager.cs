@@ -88,7 +88,7 @@ namespace Microsoft.AspNetCore.Hosting
 
         static async Task<byte[]> RequestNewCertificate(string[] domainNames, AcmeSettings acmeSettings, Func<string, string, Task> challengeResponseReceiver)
         {
-            using (var client = new AcmeClient(new Uri(acmeSettings.AcmeServer)))
+            using (var client = new AcmeClient(new Uri(acmeSettings.AcmeUri)))
             {
                 // Create new registration
                 var account = await client.NewRegistraton($"mailto:{acmeSettings.EmailAddress}");

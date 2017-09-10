@@ -12,11 +12,11 @@ namespace Webapp.Services
         public string EmailAddress { get; set; }
         public string TermsOfServiceUri { get; set; }
         public string PfxPassword { get; set; }
-        public string AcmeServer { get; set; }
+        public string AcmeUri { get; set; }
 
         public AcmeSettings()
         {
-            AcmeServer = "https://acme-v01.api.letsencrypt.org/directory";
+            AcmeUri = "https://acme-v01.api.letsencrypt.org/directory";
             TermsOfServiceUri = "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf";
         }
     }

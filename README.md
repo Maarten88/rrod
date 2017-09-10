@@ -27,9 +27,9 @@ This project demonstrates many technologies in context:
 - Actor-based back-end based on Microsoft Orleans 2.0
 - Using Table Storage for persisting state (install the Azure Storage emulator to run this project)
 - Demo Actor implementing Event Sourcing, using the Redux pattern
-- AspNet Distributed Cache service mplemented against Orleans
+- AspNet Distributed Cache service implemented against Orleans
 
 This code should be considered experimental. It mostly works, but it has dependencies that are alpha quality, 
-and the project itself has several rough edges and has not been thoroughly tested. I welcome feedback!
+the project has several rough edges and has not been thoroughly tested. I welcome feedback!
 
 -- Maarten

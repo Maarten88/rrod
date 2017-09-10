@@ -3,10 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netstandard1.6</TargetFramework>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-    <DebugType>portable</DebugType>
     <AssemblyName>GrainInterfaces</AssemblyName>
     <PackageId>GrainInterfaces</PackageId>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,8 +13,4 @@
     <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0-*" />
   </ItemGroup>
   
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
-  </PropertyGroup>
-
 </Project>
