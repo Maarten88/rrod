@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.6</TargetFramework>
-    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <NetStandardImplicitPackageVersion>2.0.0</NetStandardImplicitPackageVersion>
+    <GenerateFullPaths>true</GenerateFullPaths>
     <AssemblyName>GrainInterfaces</AssemblyName>
     <PackageId>GrainInterfaces</PackageId>
   </PropertyGroup>
@@ -13,4 +14,8 @@
     <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0-*" />
   </ItemGroup>
   
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
+  </PropertyGroup>
+
 </Project>

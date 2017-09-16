@@ -1,31 +1,36 @@
-using GrainInterfaces;
-using IdentityModel;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
+using System;
+using System.IO;
+using System.Threading;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Orleans;
-using Orleans.Concurrency;
 using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.IO;
-using System.IO.Compression;
+using Microsoft.Extensions.Logging;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
+using Webapp.Services;
+using GrainInterfaces;
+using Orleans.Concurrency;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
+using Microsoft.AspNetCore.SpaServices.Webpack;
 using Webapp.Controllers;
 using Webapp.Identity;
-using Webapp.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Identity;
+using IdentityModel;
+using System.IdentityModel.Tokens;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
+using System.Net;
 
 namespace Webapp
 {
@@ -153,7 +158,7 @@ namespace Webapp
                     })
                     .UseUrls("http://*:80/.well-known/acme-challenge/")
                     .UseKestrel()
-                    .UseLoggerFactory(loggerFactory)
+                    // .UseLoggerFactory(loggerFactory)
                     .Configure(app => {
                         app.UseAcmeResponse();
                     })
@@ -175,7 +180,7 @@ namespace Webapp
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseEnvironment(environment)
                 .UseUrls(listenUrls.ToArray())
-                .UseLoggerFactory(loggerFactory)
+                // .UseLoggerFactory(loggerFactory)
                 .ConfigureServices(services =>
                 {
                     services.AddSingleton<IConfiguration>(Configuration);
@@ -227,11 +232,14 @@ namespace Webapp
                         options.Password.RequireUppercase = false;
                         options.Password.RequireNonAlphanumeric = false; ;
                         options.Password.RequiredLength = 5;
+
+                        options.ClaimsIdentity.UserIdClaimType = JwtClaimTypes.Subject;
+                        options.ClaimsIdentity.UserNameClaimType = JwtClaimTypes.Name;
+                        options.ClaimsIdentity.RoleClaimType = JwtClaimTypes.Role;
                     })
                     .AddUserStore<OrleansUserStore>()
                     .AddRoleStore<OrleansRoleStore>()
                     .AddUserManager<ApplicationUserManager>()
-                    // .AddIdentityServerUserClaimsPrincipalFactory()
                     .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>()
                     .AddDefaultTokenProviders();
 
@@ -240,12 +248,51 @@ namespace Webapp
 
                     // IdentityServer Authentication
                     services.AddIdentityServer()
-                        .AddTemporarySigningCredential()
+                        .AddDeveloperSigningCredential()
                         .AddInMemoryApiResources(Config.GetApiResources())
-                        .AddInMemoryClients(Config.GetClients());
+                        .AddInMemoryClients(Config.GetClients())
+                        .AddAspNetIdentity<ApplicationUser>();
+
+                    services
+                        .AddIdentityServerUserClaimsPrincipalFactory<ApplicationUser, UserRole>();
         
+                    services.AddAuthentication(options =>
+                    {
+                        options.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
+                        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    })
+                    .AddCookie()
+                    .AddJwtBearer(options =>
+                    {
+                        options.Authority = urls.First();
+                        options.RequireHttpsMetadata = environment != "Development";
+                        options.Audience = urls.First();
+                        // AllowedScopes = new[] { "email", "openid" },
+                        // ApiName = "actions",
+                        options.Events = new JwtBearerEvents
+                        {
+                            // For debugging...
+                            OnAuthenticationFailed = async (context) =>
+                            {
+                                await Task.FromResult(0);
+                            },
+                            OnChallenge = async (context) =>
+                            {
+                                await Task.FromResult(0);
+                            },
+                            OnMessageReceived = async (context) =>
+                            {
+                                await Task.FromResult(0);
+                            },
+                            OnTokenValidated = async (context) =>
+                            {
+                                await Task.FromResult(0);
+                            }
+                        };
+                    });
+
                     // services.AddWebSocketManager();
-                    
                     services.AddNodeServices(options => {
                         // Debugging is currently broken in NodeServices with recent nodejs versions
                         //if (isDevelopment)
@@ -288,39 +335,7 @@ namespace Webapp
                         app.UseExceptionHandler("/Home/Error");
                     }
 
-                    app.UseIdentity();
                     app.UseIdentityServer();
-
-                    JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-                    app.UseIdentityServerAuthentication(new IdentityServerAuthenticationOptions
-                    {
-                        Authority = urls.First(),
-                        LegacyAudienceValidation = false,
-                        
-                        // AuthenticationScheme = IdentityServerConstants.DefaultCookieAuthenticationScheme,
-                        // SupportedTokens = IdentityServer4.AccessTokenValidation.SupportedTokens.Jwt,
-                        RequireHttpsMetadata = false, // !env.IsDevelopment(),
-                        ApiName = urls.First(),
-                        JwtBearerEvents = new JwtBearerEvents
-                        {
-                            OnAuthenticationFailed = async (ctx) => 
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnChallenge = async (ctx) => 
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnMessageReceived = async (ctx) => 
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnTokenValidated = async (ctx) => 
-                            {
-                                await Task.FromResult(0);
-                            }
-                        }
-                    });
 
                     // if a .gz version of a static file is available (created by webpack), send that one
                     app.UseCompressedStaticFiles();
@@ -349,7 +364,13 @@ namespace Webapp
                         var certificateManager = options.ApplicationServices.GetService<ICertificateManager>();
                         var certificate = await certificateManager.GetCertificate(httpsDomains);
                         if (certificate != null)
-                            options.UseHttps(certificate);
+                        {
+                            options.Listen(IPAddress.Loopback, 443, listenOptions =>
+                            {
+                                listenOptions.UseHttps(certificate);
+                            });                            
+                        }
+                        // options.UseHttps(certificate);
 
                         //if (acmeHost != null)
                         //{

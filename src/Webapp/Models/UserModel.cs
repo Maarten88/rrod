@@ -1,7 +1,7 @@
 ﻿using GrainInterfaces;
 using System.ComponentModel.DataAnnotations;
 
-namespace Webapp.Account
+namespace Webapp.Models
 {
     public class UserModel
     {
