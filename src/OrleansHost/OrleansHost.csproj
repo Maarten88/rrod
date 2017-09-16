@@ -4,7 +4,6 @@
     <NetStandardImplicitPackageVersion>2.0.0</NetStandardImplicitPackageVersion>
     <GenerateFullPaths>true</GenerateFullPaths>
     <OutputType>Exe</OutputType>
-    <RuntimeIdentifiers>win10-x64</RuntimeIdentifiers>
     <UserSecretsId>Rodos-Secrets</UserSecretsId>
   </PropertyGroup>
 
@@ -23,7 +22,4 @@
     <PackageReference Include="Microsoft.Orleans.OrleansProviders" Version="2.0.0-*" />
   </ItemGroup>
   
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
-  </PropertyGroup>
 </Project>
