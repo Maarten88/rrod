@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { ApplicationState } from '../store';
 import { Navbar, Nav, NavItem, NavDropdown, MenuItem } from 'react-bootstrap';

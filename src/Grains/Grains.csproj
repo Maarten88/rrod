@@ -6,8 +6,7 @@
     <GenerateFullPaths>true</GenerateFullPaths>
     <AssemblyName>Grains</AssemblyName>
     <PackageId>Grains</PackageId>
-    <UserSecretsId>Rodos-Secrets</UserSecretsId>
-    <PackageTargetFallback>$(PackageTargetFallback)</PackageTargetFallback>
+    <UserSecretsId>rrod-secrets</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

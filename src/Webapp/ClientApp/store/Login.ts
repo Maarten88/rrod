@@ -2,9 +2,9 @@
 import { Action, Reducer, ActionCreator } from 'redux';
 import { AppThunkAction } from './';
 import { LoginInputModel } from '../server/LoginInputModel';
-import { browserHistory } from 'react-router';
 import { actionCreators as userActionCreators, GetUserReceivedAction, GetUserRequestAction, UserModel }  from './User';
 import { LogoutInputModel } from '../server/LogoutInputModel';
+import { push, RouterAction, CALL_HISTORY_METHOD } from 'react-router-redux';
 
 export const LOGIN_REQUEST = 'LoginRequestAction';
 export const LOGIN_SUCCESS = 'LoginSuccessAction';
@@ -59,7 +59,7 @@ interface LogoutSuccessAction {
 }
 
 // TODO import Success and Invalid actions from server and handle them
-type KnownAction = LoginRequestAction | LoginErrorAction | LoginSuccessAction | LoginInvalidAction | LogoutRequestAction | LogoutErrorAction | LogoutSuccessAction;
+type KnownAction = LoginRequestAction | LoginErrorAction | LoginSuccessAction | LoginInvalidAction | LogoutRequestAction | LogoutErrorAction | LogoutSuccessAction | RouterAction;
 
 export const actionCreators = {
 
@@ -80,7 +80,7 @@ export const actionCreators = {
         if (response.ok) {
             dispatch({ type: LOGIN_SUCCESS });
             dispatch(userActionCreators.getUser() as any);
-            browserHistory.push('/');
+            dispatch(push('/'));
         } else {
             // TODO: display error
             dispatch({ type: LOGIN_ERROR });
@@ -100,7 +100,7 @@ export const actionCreators = {
 
         if (response.ok) {
             dispatch({ type: LOGOUT_SUCCESS });
-            browserHistory.push('/');
+            dispatch(push('/'));
         } else {
             dispatch({ type: LOGOUT_ERROR });
         }
@@ -125,6 +125,8 @@ export const reducer: Reducer<LoginState> = (state: LoginState, action: KnownAct
             return { authenticating: false, authenticated: true };
         case LOGOUT_SUCCESS:
             return { authenticating: false, authenticated: false };
+        case CALL_HISTORY_METHOD: // Router reducer handles this
+            return state;
         default:
             const exhaustiveCheck: never = action;
     }

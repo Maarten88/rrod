@@ -1,0 +1,32 @@
+{
+    "include": [],
+    "compilerOptions": {
+        "baseUrl": ".",
+        "moduleResolution": "node",
+        "target": "es2017",
+        "jsx": "react",
+        "experimentalDecorators": true,
+        "sourceMap": true,
+        "skipDefaultLibCheck": true,
+        "lib": [ "es2017", "dom" ],
+        "allowJs": false,
+        "types": [ 
+            "webpack-env"
+        ],
+        "typeRoots": [
+        // add path to @types
+            "node_modules/@types"
+        ],
+        "paths": {
+            "*": [ 
+                "./ClientApp/types/*", 
+                "*" 
+            ]
+        }
+    },
+    "exclude": [
+      "bin",
+      "obj",
+      "node_modules"
+    ]
+  }

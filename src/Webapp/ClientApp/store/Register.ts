@@ -3,7 +3,7 @@ import { Action, Reducer, ActionCreator } from 'redux';
 import { AppThunkAction } from './';
 import { RegisterViewModel } from '../server/RegisterViewModel';
 import * as Server from '../server/User';
-import { browserHistory } from 'react-router';
+import { push, RouterAction, CALL_HISTORY_METHOD } from 'react-router-redux';
 import { LOGIN_SUCCESS, LoginSuccessAction } from './Login';
 
 export const REGISTER_REQUEST = 'RegisterRequestAction';
@@ -40,7 +40,7 @@ type KnownAction = RegisterRequestAction | RegisterErrorAction | RegisterSuccess
 
 export const actionCreators = {
 
-    register: (registerModel: RegisterViewModel): AppThunkAction<KnownAction> => async (dispatch, getState) => {
+    register: (registerModel: RegisterViewModel) => async (dispatch, getState) => {
         dispatch({ type: REGISTER_REQUEST });
         let xsrf = getState().session.xsrfToken;
         let response = <Response>await fetch('/account/register', {
@@ -56,7 +56,7 @@ export const actionCreators = {
         if (response.ok) {
             dispatch({ type: REGISTER_SUCCESS, payload: registerModel });
             dispatch({ type: LOGIN_SUCCESS });
-            browserHistory.push('/');
+            dispatch(push('/'));
         } else {
             dispatch({ type: REGISTER_ERROR });
         }

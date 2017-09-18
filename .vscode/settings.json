@@ -1,4 +1,8 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-    "editor.fontSize": 16
+    "editor.fontSize": 16,
+    "csharp.suppressDotnetRestoreNotification": true,
+    "typescript.tsdk": "./src/Webapp/node_modules/typescript/lib",
+    "typescript.referencesCodeLens.enabled": true,
+    "typescript.implementationsCodeLens.enabled": true
 }

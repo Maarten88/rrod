@@ -4,7 +4,7 @@
     <NetStandardImplicitPackageVersion>2.0.0</NetStandardImplicitPackageVersion>
     <GenerateFullPaths>true</GenerateFullPaths>
     <OutputType>Exe</OutputType>
-    <UserSecretsId>Rodos-Secrets</UserSecretsId>
+    <UserSecretsId>rrod-secrets</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

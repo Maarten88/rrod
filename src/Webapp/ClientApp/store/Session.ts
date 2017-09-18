@@ -1,6 +1,6 @@
 ﻿import { Reducer, ActionCreator } from 'redux';
 import { AppThunkAction } from './';
-import Cookies from 'js-cookie';
+import * as Cookies from 'js-cookie';
 
 // -----------------
 // STATE - This defines the type of data maintained in the Redux store.

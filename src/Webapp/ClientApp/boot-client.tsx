@@ -1,30 +1,49 @@
-import 'babel-polyfill';
 import './css/site.scss';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { browserHistory, Router } from 'react-router';
+import { AppContainer } from 'react-hot-loader';
 import { Provider } from 'react-redux';
-import { syncHistoryWithStore } from 'react-router-redux';
-import routes from './routes';
+import { ConnectedRouter } from 'react-router-redux';
+import { createBrowserHistory } from 'history';
 import configureStore from './configureStore';
 import { ApplicationState }  from './store';
+import * as RoutesModule from './routes';
+let routes = RoutesModule.routes;
+
 // import { actionCreators as sessionActionCreators } from './store/Session';
 import { actionCreators as webSocketActionCreators } from './store/WebsocketConnection';
 
 // Get the application-wide store instance, prepopulating with state from the server where available.
+// Create browser history to use in the Redux store
+const baseUrl = document.getElementsByTagName('base')[0].getAttribute('href')!;
+const history = createBrowserHistory({ basename: baseUrl });
+
+// Get the application-wide store instance, prepopulating with state from the server where available.
 const initialState = (window as any).initialReduxState as ApplicationState;
-const store = configureStore(initialState);
-const history = syncHistoryWithStore(browserHistory, store);
+const store = configureStore(history, initialState);
 
-// This code starts up the React app when it runs in a browser. It sets up the routing configuration
-// and injects the app into a DOM element.
-const container = document.getElementById('react-app')
+function renderApp() {
+    // This code starts up the React app when it runs in a browser. It sets up the routing configuration
+    // and injects the app into a DOM element.
+    ReactDOM.render(
+        <AppContainer>
+            <Provider store={ store }>
+                <ConnectedRouter history={ history } children={ routes } />
+            </Provider>
+        </AppContainer>,
+        document.getElementById('react-app')
+    );
+}
 
-ReactDOM.render(
-    <Provider store={store}>
-        <Router history={ history } children={ routes } />
-    </Provider>
-    , container);
+renderApp();
+
+// Allow Hot Module Replacement
+if (module.hot) {
+    module.hot.accept('./routes', () => {
+        routes = require<typeof RoutesModule>('./routes').routes;
+        renderApp();
+    });
+}
 
 setTimeout(async () => {
     await store.dispatch(webSocketActionCreators.startListener()); 

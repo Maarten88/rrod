@@ -1,13 +1,46 @@
 {
     "version": "2.0.0",
-    "command": "dotnet",
     "type": "shell",
     "args": [],
     "tasks": [
         {
-            "taskName": "build",
+            "taskName": "Build OrleansHost",
+            "command": "dotnet",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/src/OrleansHost"
+            },
             "group": "build",
             "problemMatcher": "$msCompile"
-        }
+        },
+        {
+            "taskName": "Build Webapp",
+            "command": "dotnet",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/src/Webapp"
+            },
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "command": "webpack",
+            "taskName": "Webpack",
+            "group": "build",
+            "problemMatcher": "$tsc",
+            "options": {
+                "cwd": "${workspaceRoot}/src/Webapp"
+            }
+        },
+        {
+            "taskName": "Build All",
+            "dependsOn": ["Build OrleansHost", "Build Webapp", "Webpack"],
+            "group": "build",
+            "problemMatcher": ["$msCompile", "$tsc"]
+        }        
     ]
 }

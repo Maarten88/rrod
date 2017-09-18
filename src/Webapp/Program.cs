@@ -232,16 +232,12 @@ namespace Webapp
                         options.Password.RequireUppercase = false;
                         options.Password.RequireNonAlphanumeric = false; ;
                         options.Password.RequiredLength = 5;
-
-                        options.ClaimsIdentity.UserIdClaimType = JwtClaimTypes.Subject;
-                        options.ClaimsIdentity.UserNameClaimType = JwtClaimTypes.Name;
-                        options.ClaimsIdentity.RoleClaimType = JwtClaimTypes.Role;
                     })
                     .AddUserStore<OrleansUserStore>()
                     .AddRoleStore<OrleansRoleStore>()
                     .AddUserManager<ApplicationUserManager>()
-                    .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>()
-                    .AddDefaultTokenProviders();
+                    .AddDefaultTokenProviders()
+                    .AddIdentityServer();
 
                     services.AddTransient<IEmailSender, AuthMessageSender>();
                     services.AddTransient<ISmsSender, AuthMessageSender>();
@@ -253,16 +249,14 @@ namespace Webapp
                         .AddInMemoryClients(Config.GetClients())
                         .AddAspNetIdentity<ApplicationUser>();
 
-                    services
-                        .AddIdentityServerUserClaimsPrincipalFactory<ApplicationUser, UserRole>();
+                    //services
+                    //    .AddIdentityServerUserClaimsPrincipalFactory<ApplicationUser, UserRole>();
         
-                    services.AddAuthentication(options =>
-                    {
-                        options.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
-                        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    services.AddAuthentication(IdentityConstants.ApplicationScheme)
+                    .AddCookie(options => {
+                        options.LoginPath = "/login";
+                        options.LogoutPath = "/logout";
                     })
-                    .AddCookie()
                     .AddJwtBearer(options =>
                     {
                         options.Authority = urls.First();
@@ -294,12 +288,11 @@ namespace Webapp
 
                     // services.AddWebSocketManager();
                     services.AddNodeServices(options => {
-                        // Debugging is currently broken in NodeServices with recent nodejs versions
-                        //if (isDevelopment)
-                        //{
-                        //    options.LaunchWithDebugging = true;
-                        //    options.DebuggingPort = 5858;
-                        //}
+                        if (isDevelopment)
+                        {
+                            options.LaunchWithDebugging = true;
+                            options.DebuggingPort = 9229;
+                        }
                         options.NodeInstanceOutputLogger = loggerFactory.CreateLogger("Node Console Logger");
                     });
                     // Add framework services.

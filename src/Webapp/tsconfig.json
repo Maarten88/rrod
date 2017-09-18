@@ -1,26 +1,32 @@
 {
+  "include": [
+  ],
   "compilerOptions": {
-    "baseUrl": ".",
-    "moduleResolution": "node",
-    "target": "es2015",
+    "baseUrl": "./",
     "module": "es2015",
-    "jsx": "preserve",
+    "moduleResolution": "node",
+    "target": "es5",
+    "jsx": "react",
     "experimentalDecorators": true,
     "sourceMap": true,
     "skipDefaultLibCheck": true,
     "importHelpers": true,
     "noEmitHelpers": true,
     "allowSyntheticDefaultImports": true, // for classNames
-    "lib": [ "es6", "dom" ],
+    // "skipLibCheck": true, // temporary workaround for @types/lodash: 'All declarations of 'WeakMap' must have identical type parameters.'
+    "lib": [
+      "es2017", 
+      "dom"
+    ],
     "allowJs": false,
-    "types": [ "webpack-env" ],
+    "types": [
+      "webpack-env"
+    ],
     "paths": {
-      // Fix "Duplicate identifier" errors caused by multiple dependencies fetching their own copies of type definitions.
-      // We tell TypeScript which type definitions module to treat as the canonical one (instead of combining all of them).
-      "history": [ "./node_modules/@types/history/index" ],
-      "redux": [ "./node_modules/@types/redux/index" ],
-      "react": [ "./node_modules/@types/react/index" ],
-      "*": [ "./ClientApp/types/*", "*" ]
+      "*": [
+        "./ClientApp/types/*",
+        "*"
+      ]
     }
   },
   "exclude": [
