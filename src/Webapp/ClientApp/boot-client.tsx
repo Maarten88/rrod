@@ -11,7 +11,7 @@ import * as RoutesModule from './routes';
 let routes = RoutesModule.routes;
 
 // import { actionCreators as sessionActionCreators } from './store/Session';
-import { actionCreators as webSocketActionCreators } from './store/WebsocketConnection';
+import { actionCreators as connectionActionCreators } from './store/SignalRConnection';
 
 // Get the application-wide store instance, prepopulating with state from the server where available.
 // Create browser history to use in the Redux store
@@ -46,6 +46,6 @@ if (module.hot) {
 }
 
 setTimeout(async () => {
-    await store.dispatch(webSocketActionCreators.startListener()); 
+    await store.dispatch(connectionActionCreators.startListener()); 
 });
 

@@ -37,8 +37,6 @@ namespace Webapp
     public class Program
     {
         public static IConfigurationRoot Configuration;
-        public static readonly ILoggerFactory loggerFactory = new LoggerFactory();
-
         public static void Main(string[] args)
         {
             string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
@@ -57,9 +55,6 @@ namespace Webapp
 
             Configuration = builder.Build();
 
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
-
             // Initialize the connection to the OrleansHost process
             var orleansClientConfig = ClientConfiguration.LocalhostSilo();
             orleansClientConfig.DeploymentId = Configuration["DeploymentId"];
@@ -67,19 +62,24 @@ namespace Webapp
             orleansClientConfig.AddSimpleMessageStreamProvider("Default");
             orleansClientConfig.DefaultTraceLevel = Severity.Warning;
             orleansClientConfig.TraceFileName = "";
+
+            IClusterClient orleansClient;
             do
             {
+                orleansClient = new ClientBuilder().UseConfiguration(orleansClientConfig).Build();
                 try
                 {
-                    GrainClient.Initialize(orleansClientConfig);
+                    orleansClient.Connect().Wait();
+                    // GrainClient.Initialize(orleansClientConfig);
                 }
-                catch (Exception ex) when (ex is OrleansException || ex is SiloUnavailableException)
+                catch (Exception ex) when (ex is OrleansException || ex is SiloUnavailableException || (ex is AggregateException && ex.InnerException is SiloUnavailableException))
                 {
+                    orleansClient.Dispose();
                     // Wait for the Host to start
                     Thread.Sleep(3000);
                 }
             }
-            while (!GrainClient.IsInitialized);
+            while (!orleansClient.IsInitialized);
 
             // we use a single settings file, that also contains the hosting settings
             var urls = (Configuration[WebHostDefaults.ServerUrlsKey] ?? "http://localhost:5000")
@@ -125,32 +125,39 @@ namespace Webapp
                     DomainNames = httpsDomains,
                     GetChallengeResponse = async (challenge) =>
                     {
-                        var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
+                        var cacheGrain = orleansClient.GetGrain<ICacheGrain<string>>(challenge);
                         var response = await cacheGrain.Get();
                         return response.Value;
                     },
                     SetChallengeResponse = async (challenge, response) =>
                     {
-                        var cacheGrain = GrainClient.GrainFactory.GetGrain<ICacheGrain<string>>(challenge);
+                        var cacheGrain = orleansClient.GetGrain<ICacheGrain<string>>(challenge);
                         await cacheGrain.Set(new Immutable<string>(response), TimeSpan.FromHours(2));
                     },
                     StoreCertificate = async (string domainName, byte[] certData) =>
                     {
-                        var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
+                        var certGrain = orleansClient.GetGrain<ICertGrain>(domainName);
                         await certGrain.UpdateCertificate(certData);
                     },
                     RetrieveCertificate = async (domainName) =>
                     {
-                        var certGrain = GrainClient.GrainFactory.GetGrain<ICertGrain>(domainName);
+                        var certGrain = orleansClient.GetGrain<ICertGrain>(domainName);
                         var certData = await certGrain.GetCertificate();
                         return certData.Value;
                     }
                 };
 
                 acmeHost = new WebHostBuilder()
+                    .UseConfiguration(Configuration)
+                    .ConfigureLogging((context, factory) =>
+                    {
+                        factory.AddConfiguration(context.Configuration.GetSection("Logging"));
+                        factory.AddConsole();
+                        factory.AddDebug();
+                    })
                     .UseEnvironment(environment)
                     .ConfigureServices(services => {
-                        services.AddSingleton<IConfiguration>(Configuration);
+                        services.AddSingleton<IClusterClient>(orleansClient);
                         services.Configure<AcmeSettings>(Configuration.GetSection(nameof(AcmeSettings)));
 
                         // Register a certitificate manager, supplying methods to store and retreive certificates and acme challenge responses
@@ -164,192 +171,40 @@ namespace Webapp
                     })
                     .Build();
 
+                
                 try
                 {
                     acmeHost.Start();
                 }
                 catch (Exception e)
                 {
-                    var logger = loggerFactory.CreateLogger<Program>();
+                    var logger = acmeHost.Services.GetService<ILogger<Program>>();
+                    // var logger = loggerFactory.CreateLogger<Program>();
                     logger.LogError("Error: can't start web listener for acme certificate renewal, probably the web address is in use by another process. Exception message is: " + e.Message);
                     logger.LogError("Ignoring noncritical error (stop W3SVC or Skype to fix this), continuing...");
                 }
             }
 
             var host = new WebHostBuilder()
+                .UseConfiguration(Configuration)
+                .ConfigureLogging((context, factory) =>
+                {
+                    factory.AddConfiguration(context.Configuration.GetSection("Logging"));
+                    factory.AddConsole();
+                    factory.AddDebug();
+                })
+                .ConfigureServices(services => {
+                    services.AddSingleton<IClusterClient>(orleansClient);
+                    if (secureUrls.Any())
+                        services.AddAcmeCertificateManager(acmeOptions);
+                })
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseEnvironment(environment)
                 .UseUrls(listenUrls.ToArray())
-                // .UseLoggerFactory(loggerFactory)
-                .ConfigureServices(services =>
+                .UseSetting("baseUrl", urls.First())
+                .UseStartup<Startup>()
+                .UseKestrel(async options =>
                 {
-                    services.AddSingleton<IConfiguration>(Configuration);
-                    services.Configure<AcmeSettings>(Configuration.GetSection(nameof(AcmeSettings)));
-
-                    // TODO DotNetCore 2.0 configure the cookie name: https://github.com/aspnet/Mvc/commit/17dc23a024c1219ec58c48199f8d4f23117cf348
-                    // services.Configure<CookieTempDataProviderOptions>(options => options.CookieName = "SESSION");
-
-                    // Register service for session cookie (used in controller)
-                    services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
-
-                    // Add a basic Orleans-based distributed cache
-                    services.AddOrleansCache();
-                   
-
-                    if (secureUrls.Any())
-                    {
-                        services.AddAcmeCertificateManager(acmeOptions);
-                    }
-                    services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
-                    services.AddResponseCompression(options => {
-                        options.EnableForHttps = true;
-                        options.Providers.Add<GzipCompressionProvider>();
-                    });
-
-                    services.AddAntiforgery(options =>
-                    {
-                        // options.CookieName = "XSRF-TOKEN";
-                        options.HeaderName = "X-XSRF-TOKEN";
-                    });
-
-                    services.AddAuthorization(options =>
-                    {
-                        options.AddPolicy("admin", policy =>
-                        {
-                            policy.RequireClaim(JwtClaimTypes.Role, "admin");
-                        });
-                    });
-
-                    services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ApplicationUserClaimsPrincipalFactory>();
-
-                    // var jwtAppSettingOptions = Configuration.GetSection(nameof(JwtIssuerOptions));
-                    // Configure JwtIssuerOptions
-                    services.Configure<JwtIssuerOptions>(Configuration.GetSection(nameof(JwtIssuerOptions)));
-
-                    services.AddIdentity<ApplicationUser, UserRole>(options => {
-                        options.Password.RequireDigit = false;
-                        options.Password.RequireLowercase = false;
-                        options.Password.RequireUppercase = false;
-                        options.Password.RequireNonAlphanumeric = false; ;
-                        options.Password.RequiredLength = 5;
-                    })
-                    .AddUserStore<OrleansUserStore>()
-                    .AddRoleStore<OrleansRoleStore>()
-                    .AddUserManager<ApplicationUserManager>()
-                    .AddDefaultTokenProviders()
-                    .AddIdentityServer();
-
-                    services.AddTransient<IEmailSender, AuthMessageSender>();
-                    services.AddTransient<ISmsSender, AuthMessageSender>();
-
-                    // IdentityServer Authentication
-                    services.AddIdentityServer()
-                        .AddDeveloperSigningCredential()
-                        .AddInMemoryApiResources(Config.GetApiResources())
-                        .AddInMemoryClients(Config.GetClients())
-                        .AddAspNetIdentity<ApplicationUser>();
-
-                    //services
-                    //    .AddIdentityServerUserClaimsPrincipalFactory<ApplicationUser, UserRole>();
-        
-                    services.AddAuthentication(IdentityConstants.ApplicationScheme)
-                    .AddCookie(options => {
-                        options.LoginPath = "/login";
-                        options.LogoutPath = "/logout";
-                    })
-                    .AddJwtBearer(options =>
-                    {
-                        options.Authority = urls.First();
-                        options.RequireHttpsMetadata = environment != "Development";
-                        options.Audience = urls.First();
-                        // AllowedScopes = new[] { "email", "openid" },
-                        // ApiName = "actions",
-                        options.Events = new JwtBearerEvents
-                        {
-                            // For debugging...
-                            OnAuthenticationFailed = async (context) =>
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnChallenge = async (context) =>
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnMessageReceived = async (context) =>
-                            {
-                                await Task.FromResult(0);
-                            },
-                            OnTokenValidated = async (context) =>
-                            {
-                                await Task.FromResult(0);
-                            }
-                        };
-                    });
-
-                    // services.AddWebSocketManager();
-                    services.AddNodeServices(options => {
-                        if (isDevelopment)
-                        {
-                            options.LaunchWithDebugging = true;
-                            options.DebuggingPort = 9229;
-                        }
-                        options.NodeInstanceOutputLogger = loggerFactory.CreateLogger("Node Console Logger");
-                    });
-                    // Add framework services.
-                    services
-                        .AddMvc()
-                        .AddJsonOptions(options =>
-                        {
-                            options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
-                            options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
-                            options.SerializerSettings.Formatting = Formatting.Indented;
-                            JsonConvert.DefaultSettings = () => new JsonSerializerSettings()
-                            {
-                                ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                                Formatting = Newtonsoft.Json.Formatting.Indented,
-                                NullValueHandling = NullValueHandling.Ignore,
-                            };
-                        });
-                })
-                .Configure(app =>
-                {
-                    if (isDevelopment)
-                    {
-                        app.UseDeveloperExceptionPage();
-                        app.UseWebpackDevMiddleware(new WebpackDevMiddlewareOptions
-                        {
-                            HotModuleReplacement = true,
-                            HotModuleReplacementServerPort = 6000,
-                            ReactHotModuleReplacement = true,
-                        });
-                    }
-                    else
-                    {
-                        app.UseExceptionHandler("/Home/Error");
-                    }
-
-                    app.UseIdentityServer();
-
-                    // if a .gz version of a static file is available (created by webpack), send that one
-                    app.UseCompressedStaticFiles();
-                    app.UseStaticFiles();
-                    app.UseResponseCompression();
-
-                    app.UseWebSockets();
-                    app.Map("/actions", ap => ap.UseMiddleware<WebSocketHandlerMiddleware>(new ActionsHandler()));
-
-                    app.UseMvc(routes =>
-                    {
-                        routes.MapRoute(
-                            name: "default",
-                            template: "{controller=Home}/{action=Index}/{id?}");
-
-                        routes.MapSpaFallbackRoute(
-                            name: "spa-fallback",
-                            defaults: new { controller = "Home", action = "Index" });
-                    });
-                })
-                .UseKestrel(async options => {
                     // TODO: Make this into a nice Kestrel.Https.Acme nuget package
                     if (secureUrls.Any())
                     {
@@ -361,16 +216,8 @@ namespace Webapp
                             options.Listen(IPAddress.Loopback, 443, listenOptions =>
                             {
                                 listenOptions.UseHttps(certificate);
-                            });                            
+                            });
                         }
-                        // options.UseHttps(certificate);
-
-                        //if (acmeHost != null)
-                        //{
-                        //    // How to stop the acme listener? Kestrel doesn't support SNI, so we need to stop the acme listener to free up port 80 if we want to bind our regular site to that port too
-                        //    acmeHost.Dispose();
-                        //    acmeHost = null;
-                        //}
                     }
                 })
                 .Build();

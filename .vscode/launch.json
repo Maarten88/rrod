@@ -4,15 +4,14 @@
         {
             "type": "node",
             "request": "attach",
-            "name": "Attach (Legacy Protocol)",
-            "port": 5858,
-            "protocol": "legacy"
+            "name": "Attach to Node Server",
+            "port": 9229,
+            "protocol": "inspector"
         },
         {
             "name": "Launch OrleansHost",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "Build OrleansHost",
             "program": "${workspaceRoot}\\src\\OrleansHost\\bin\\Debug\\netcoreapp2.0\\OrleansHost.dll",
             "args": [],
             "cwd": "${workspaceRoot}\\src\\OrleansHost",
@@ -24,7 +23,6 @@
             "name": "Launch Webapp",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "Build Webapp",
             "program": "${workspaceRoot}\\src\\Webapp\\bin\\Debug\\netcoreapp2.0\\Webapp.dll",
             "args": [],
             "cwd": "${workspaceRoot}\\src\\Webapp",

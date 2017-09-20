@@ -4,6 +4,21 @@
     "args": [],
     "tasks": [
         {
+            "taskName": "Build All",
+            "command": "dotnet",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
             "taskName": "Build OrleansHost",
             "command": "dotnet",
             "args": [

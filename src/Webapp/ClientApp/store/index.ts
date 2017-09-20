@@ -2,7 +2,7 @@ import * as Counter from './Counter';
 import * as Footer from './Footer';
 import * as Contact from './Contact';
 import * as Session from './Session';
-import * as Connection from './WebsocketConnection';
+import * as Connection from './SignalRConnection';
 import * as Login from './Login';
 import * as User from './User';
 import * as Register from './Register';

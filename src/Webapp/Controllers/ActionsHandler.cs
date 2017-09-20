@@ -60,10 +60,12 @@ namespace Webapp.Controllers
 
     public class ActionsController : Controller
     {
-        readonly Guid sessionId;
+        private readonly Guid sessionId;
+        private readonly IClusterClient grainClient;
 
-        public ActionsController(ITempDataProvider cookie, IHttpContextAccessor httpContextAccessor): base()
+        public ActionsController(IClusterClient grainClient, ITempDataProvider cookie, IHttpContextAccessor httpContextAccessor): base()
         {
+            this.grainClient = grainClient;
             var data = cookie.LoadTempData(httpContextAccessor.HttpContext);
             if (data.TryGetValue("session", out object id) && (id is Guid))
             {
@@ -80,7 +82,7 @@ namespace Webapp.Controllers
         [HttpGet("~/counterstate")]
         public async Task<CounterState> CounterState(Guid id)
         {
-            var grain = GrainClient.GrainFactory.GetGrain<ICounterGrain>(id);
+            var grain = this.grainClient.GetGrain<ICounterGrain>(id);
             var state = (await grain.GetState()) ?? new CounterState();
             return state;
         }
@@ -93,7 +95,7 @@ namespace Webapp.Controllers
             if (action != null)
             {
                 // We can send the action directly, or send it via a stream
-                var grain = GrainClient.GrainFactory.GetGrain<ICounterGrain>(this.sessionId);
+                var grain = this.grainClient.GetGrain<ICounterGrain>(this.sessionId);
                 await grain.Process(action);
                 return Ok();
             }
@@ -107,7 +109,7 @@ namespace Webapp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> StartCounter()
         {
-            var grain = GrainClient.GrainFactory.GetGrain<ICounterGrain>(this.sessionId);
+            var grain = this.grainClient.GetGrain<ICounterGrain>(this.sessionId);
             await grain.StartCounterTimer();
             return Ok();
         }
@@ -116,7 +118,7 @@ namespace Webapp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> StopCounter()
         {
-            var grain = GrainClient.GrainFactory.GetGrain<ICounterGrain>(this.sessionId);
+            var grain = this.grainClient.GetGrain<ICounterGrain>(this.sessionId);
             await grain.StopCounterTimer();
             return Ok();
         }
@@ -124,7 +126,7 @@ namespace Webapp.Controllers
         [HttpPost("~/incrementcounter")]
         public async Task<ActionResult> IncrementCounter()
         {
-            var grain = GrainClient.GrainFactory.GetGrain<ICounterGrain>(this.sessionId);
+            var grain = this.grainClient.GetGrain<ICounterGrain>(this.sessionId);
             await grain.IncrementCounter();
             return Ok();
         }
@@ -132,7 +134,7 @@ namespace Webapp.Controllers
         [HttpPost("~/decrementcounter")]
         public async Task<ActionResult> DecrementCounter()
         {
-            var grain = GrainClient.GrainFactory.GetGrain<ICounterGrain>(this.sessionId);
+            var grain = this.grainClient.GetGrain<ICounterGrain>(this.sessionId);
             await grain.DecrementCounter();
             return Ok();
         }
