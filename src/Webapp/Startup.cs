@@ -137,7 +137,6 @@ namespace Webapp
                 };
             });
 
-            // services.AddWebSocketManager();
             services.AddNodeServices(options =>
             {
                 if (this.env.IsDevelopment())
@@ -145,8 +144,7 @@ namespace Webapp
                     options.LaunchWithDebugging = true;
                     options.DebuggingPort = 9229;
                 }
-                //var loggerFactory = hostBuilderContext.Services.GetService<ILoggerFactory>();
-                //options.NodeInstanceOutputLogger = loggerFactory.CreateLogger("Node Console Logger");
+                options.NodeInstanceOutputLogger = this.loggerFactory.CreateLogger("Node Console Logger");
             });
 
             services.AddSignalR(options =>

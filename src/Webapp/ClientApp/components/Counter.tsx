@@ -37,7 +37,3 @@ export default connect(
     CounterStore.actionCreators                 // Selects which action creators are merged into the component's props
 )(Counter);
 
-// Set up HMR re-rendering.
-if (module.hot) {
-  module.hot.accept();
-}
