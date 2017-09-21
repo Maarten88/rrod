@@ -20,7 +20,13 @@
     ],
     "allowJs": false,
     "types": [
-      "webpack-env"
+      "webpack-env",
+      "EventSource"
+    ],
+    "typeRoots": [
+      "ClientApp/types",
+      "node_modules/@types",
+      "node_modules"
     ],
     "paths": {
       "*": [

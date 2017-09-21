@@ -16,7 +16,6 @@ var DefaultCounterState: CounterState = {
     transitioning: false
 };
 
-
 // -----------------
 // ACTIONS - These are serializable (hence replayable) descriptions of state transitions.
 // They do not themselves have any side-effects; they just describe something that is going to happen.
@@ -39,10 +38,11 @@ async function postEffect(url: string, xsrfToken: string, data: any = {}) {
     let response = await fetch(url, {
         method: 'POST',
         credentials: 'include',
-        headers: {
+        cache: "no-cache",
+        headers: new Headers({
             'Content-Type': 'application/json',
             'X-XSRF-TOKEN': xsrfToken
-        },
+        }),
         body: JSON.stringify(data)
     });
     return response;

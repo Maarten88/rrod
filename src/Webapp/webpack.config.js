@@ -51,24 +51,17 @@ module.exports = (env) => {
         {
             // order is important here. We do not let aspnet-webpack-react do this for us,
             // it doesn't know where to insert it
-            'main-client': [
-                'core-js/shim', 
-                'event-source-polyfill'
-            ]
-            .concat(isDevBuild ? [
-                'react-hot-loader/patch'
-            ] : [
-
-            ])
-            .concat([
-                './ClientApp/boot-client.tsx'
-            ]), // aspnet-webpack only supports a single string or array value and dynamically adds event-source-polyfill and webpack HMR
+            'main-client': './ClientApp/boot-client.tsx',
             'vendor': [
                 'react-hot-loader',
                 'tslib',
                 'react',
                 'react-dom',
                 'react-bootstrap'
+            ],
+            'polyfill': [
+                'core-js/shim', 
+                'event-source-polyfill'
             ]
         },
         output: {
@@ -79,7 +72,7 @@ module.exports = (env) => {
                 {
                     test: /\.tsx?$/,
                     include: /ClientApp/,
-                    use: 'awesome-typescript-loader?silent=true&useCache=false&instance=aw-client'
+                    use: 'awesome-typescript-loader?silent=true&useCache=false&instance=at-client'
                 },
                 {
                     test: /\.tsx?$/,
@@ -160,7 +153,7 @@ module.exports = (env) => {
                 {
                     test: /\.tsx?$/,
                     include: /ClientApp/,
-                    use: 'awesome-typescript-loader?configFileName=servertsconfig.json&useCache=false&instance=aw-server'
+                    use: 'awesome-typescript-loader?configFileName=tsconfig.server.json&useCache=false&instance=at-server'
                 },
                 {
                     test: /\.tsx?$/,

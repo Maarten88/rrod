@@ -11,11 +11,13 @@
         "lib": [ "es2017", "dom" ],
         "allowJs": false,
         "types": [ 
-            "webpack-env"
+            "webpack-env",
+            "EventSource"
         ],
         "typeRoots": [
-        // add path to @types
-            "node_modules/@types"
+            "ClientApp/types",
+            "node_modules/@types",
+            "node_modules"
         ],
         "paths": {
             "*": [ 

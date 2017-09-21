@@ -1,36 +1,45 @@
 ﻿import { Action, Reducer, ActionCreator } from 'redux';
 import { AppThunkAction } from './';
-import * as signalR from '@aspnet/signalr-client';
+import * as signalR from '../lib/signalr-client';
 
 export interface ConnectedAction {
-    type: 'CONNECTED'
+    type: 'CONNECTED';
+    payload: signalR.HubConnection;
 }
 
 export interface DisconnectedAction {
-    type: 'DISCONNECTED'
+    type: 'DISCONNECTED';
 }
 
 export interface ConnectionState {
     connected: boolean;
+    connection?: signalR.HubConnection;
 }
 
 const DefaultState = {
     connected: false
 }
-
+var x = 10;
 type KnownAction = ConnectedAction | DisconnectedAction;
 
 export const actionCreators = {
 
-    startListener: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
+    stopListener: (): AppThunkAction<KnownAction> => (dispatch, getState) => {
+        const state = getState();
+        if (state.connection.connected && state.connection.connection) {
+            dispatch({ type: 'DISCONNECTED' });
+            state.connection.connection.stop();
+        }
+    },        
+    startListener: (): AppThunkAction<KnownAction> => (dispatch, getState) => {
 
         const transportType = signalR.TransportType.WebSockets;
         const logger = new signalR.ConsoleLogger(signalR.LogLevel.Warning);
         const options = { transport: transportType, logging: logger };
 
         function getConnection(): signalR.HubConnection {
-            let http = new signalR.HttpConnection("/actionsr", options);
-            let connection = new signalR.HubConnection(http, options);
+            const http = new signalR.HttpConnection("/actionsr", options);
+            const connection = new signalR.HubConnection(http, options);
             // let connection = new signalR.HubConnection('/actionsr');
 
             connection.on('action', action => {
@@ -43,12 +52,6 @@ export const actionCreators = {
             });
 
             connection.onClosed = (e: Error) => {
-                if (e) {
-                    console.log(`signalR connection closed with message "${e.message}"`);
-                } else {
-                    console.log("signalR connection closed");
-                }
-                dispatch({ type: 'DISCONNECTED' });
 
                 function delay(time) {
                     return new Promise((resolve) => {
@@ -61,7 +64,7 @@ export const actionCreators = {
                     newConnection = getConnection();
                     return newConnection.start().then(() => {
                         console.log("signalR connection re-opened");
-                        dispatch({ type: 'CONNECTED' });
+                        dispatch({ type: 'CONNECTED', payload: newConnection });
                     }).catch(function (err: Error) {
                         if (initialTimeout > 600 * 1000) { // stop trying if we get no connection
                             console.log(`To many retries - stop reconnecting`);
@@ -74,16 +77,27 @@ export const actionCreators = {
                     });
                 }
 
-                reconnect(10000, 10000);
+                const state = getState();
+                if (state.connection.connected) { // not if we expressly closed the connection (HMR)
+
+                    if (e) {
+                        console.log(`signalR connection closed with message "${e.message}"`);
+                    } else {
+                        console.log("signalR connection closed");
+                    }
+                    dispatch({ type: 'DISCONNECTED' });
+
+                    reconnect(10000, 10000);
+                }
             }
 
             return connection;
         }
 
-        let newConnection = getConnection();
+        var newConnection = getConnection();
         newConnection.start().then(() => {
             console.log("signalR connection opened");
-            dispatch({ type: 'CONNECTED' });
+            dispatch({ type: 'CONNECTED', payload: newConnection });
             // connection.invoke('action', 'Hello')
         }).catch((err: Error) => {
             console.log(`Error opening SignalR websocket connection: ${err.message}`);
@@ -94,7 +108,7 @@ export const actionCreators = {
 export const reducer: Reducer<ConnectionState> = (state: ConnectionState, action: KnownAction) => {
     switch (action.type) {
         case 'CONNECTED':
-            return { connected: true };
+            return { connected: true, connection: action.payload };
         case 'DISCONNECTED':
             return { connected: false };
         default:

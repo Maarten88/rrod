@@ -181,8 +181,7 @@ namespace Webapp
                 app.UseWebpackDevMiddleware(new WebpackDevMiddlewareOptions
                 {
                     HotModuleReplacement = true,
-                    HotModuleReplacementServerPort = 6000,
-                    ReactHotModuleReplacement = false,
+                    ReactHotModuleReplacement = true
                 });
             }
             else
