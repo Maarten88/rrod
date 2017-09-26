@@ -128,7 +128,7 @@ namespace Grains.Redux
                 catch (Exception e)
                 {
                     logger.Error(104, e.Message, e);
-                    throw;
+                    throw new Exception($"{e.GetType().ToString()}: {e.Message}"); // StorageException may not be serializable
                 }
                 finally
                 {
@@ -181,7 +181,7 @@ namespace Grains.Redux
             {
                 string error = string.Format("Error saving actions: {0}, Message: {1}. Table={2}, Partition={3}", e.GetType().Name, e.Message, tableName, partitionKey);
                 logger.Error(101, error);
-                throw;
+                throw new Exception($"{e.GetType().ToString()}: {e.Message}"); // StorageException may not be serializable
             }
         }
 
@@ -209,7 +209,7 @@ namespace Grains.Redux
             catch (Exception e)
             {
                 logger.Error(101, string.Format("Error deleting partition {0} from Table {1}. Exception {2}, Message: '{3}'", partitionKey, this.tableName, e.GetType().Name, e.Message));
-                throw;
+                throw new Exception($"{e.GetType().ToString()}: {e.Message}"); // StorageException may not be serializable
             }
         }
 
@@ -250,13 +250,13 @@ namespace Grains.Redux
                             }
                         }
                     }
-                    catch (Exception exc)
+                    catch (Exception e)
                     {
                         logger.Error(103, String.Format("Exception reading actions: Table={0}, PartitionKey={1}, Exception={2}: {3}",
-                                tableName, partitionKey, exc.GetType().Name, exc.Message), exc);
+                                tableName, partitionKey, e.GetType().Name, e.Message), e);
                         // no exception handling required.  If this method throws,
                         // Rx will catch it and call observer.OnError() for us.
-                        throw;
+                        throw new Exception($"{e.GetType().ToString()}: {e.Message}"); // StorageException may not be serializable
                     }
                 }
                 while (token != null);

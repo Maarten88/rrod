@@ -2,7 +2,12 @@
 import * as ReactDOM from 'react-dom';
 import * as classNames from 'classnames';
 import { autobind } from 'core-decorators';
-import { debounce, Cancelable } from 'lodash';
+import debounce from 'lodash-es/debounce';
+
+interface Cancelable {
+    cancel(): void;
+    flush(): void;
+}
 
 interface ScrollEffectState {
     animated: boolean;

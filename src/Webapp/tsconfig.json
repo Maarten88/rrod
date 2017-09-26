@@ -1,43 +1,34 @@
 {
-  "include": [
-  ],
-  "compilerOptions": {
-    "baseUrl": "./",
-    "module": "es2015",
-    "moduleResolution": "node",
-    "target": "es5",
-    "jsx": "react",
-    "experimentalDecorators": true,
-    "sourceMap": true,
-    "skipDefaultLibCheck": true,
-    "importHelpers": true,
-    "noEmitHelpers": true,
-    "allowSyntheticDefaultImports": true, // for classNames
-    // "skipLibCheck": true, // temporary workaround for @types/lodash: 'All declarations of 'WeakMap' must have identical type parameters.'
-    "lib": [
-      "es2017", 
-      "dom"
-    ],
-    "allowJs": false,
-    "types": [
-      "webpack-env",
-      "EventSource"
-    ],
-    "typeRoots": [
-      "ClientApp/types",
-      "node_modules/@types",
+    "include": [],
+    "compilerOptions": {
+        "baseUrl": ".",
+        "moduleResolution": "node",
+        "target": "es2017",
+        "jsx": "react",
+        "experimentalDecorators": true,
+        "sourceMap": true,
+        "skipDefaultLibCheck": true,
+        "lib": [ "es2017", "dom" ],
+        "allowJs": true,
+        "types": [ 
+            "webpack-env",
+            "EventSource"
+        ],
+        "typeRoots": [
+            "ClientApp/types",
+            "node_modules/@types"
+        ],
+        "paths": {
+            "react": ["node_modules/@types/react"],
+            "*": [ 
+                "./ClientApp/types/*", 
+                "*" 
+            ]
+        }
+    },
+    "exclude": [
+      "bin",
+      "obj",
       "node_modules"
-    ],
-    "paths": {
-      "*": [
-        "./ClientApp/types/*",
-        "*"
-      ]
-    }
-  },
-  "exclude": [
-    "bin",
-    "obj",
-    "node_modules"
-  ]
-}
+    ]
+  }

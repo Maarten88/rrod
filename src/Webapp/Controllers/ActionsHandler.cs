@@ -6,6 +6,7 @@ using Orleans;
 using System;
 using System.Threading.Tasks;
 using Webapp.Services;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Webapp.Controllers
 {
@@ -13,10 +14,12 @@ namespace Webapp.Controllers
     {
         private readonly Guid sessionId;
         private readonly IClusterClient grainClient;
+        private readonly IHostingEnvironment env;
 
-        public ActionsController(IClusterClient grainClient, ITempDataProvider cookie, IHttpContextAccessor httpContextAccessor): base()
+        public ActionsController(IClusterClient grainClient, ITempDataProvider cookie, IHttpContextAccessor httpContextAccessor, IHostingEnvironment env): base()
         {
             this.grainClient = grainClient;
+            this.env = env;
             var data = cookie.LoadTempData(httpContextAccessor.HttpContext);
             if (data.TryGetValue("session", out object id) && (id is Guid))
             {
@@ -31,11 +34,18 @@ namespace Webapp.Controllers
         }
 
         [HttpGet("~/counterstate")]
-        public async Task<CounterState> CounterState(Guid id)
+        public async Task<IActionResult> CounterState(Guid id)
         {
             var grain = this.grainClient.GetGrain<ICounterGrain>(id);
-            var state = (await grain.GetState()) ?? new CounterState();
-            return state;
+            try 
+            {
+                var state = (await grain.GetState()) ?? new CounterState();
+                return Ok(state);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+            }
         }
 
         // This is another, more generic, way to send actions from the client to the server
@@ -63,8 +73,15 @@ namespace Webapp.Controllers
         public async Task<ActionResult> StartCounter()
         {
             var grain = this.grainClient.GetGrain<ICounterGrain>(this.sessionId);
-            await grain.StartCounterTimer();
-            return Ok();
+            try 
+            {
+                await grain.StartCounterTimer();
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+            }
         }
 
         [HttpPost("~/stopcounter")]
@@ -72,24 +89,46 @@ namespace Webapp.Controllers
         public async Task<ActionResult> StopCounter()
         {
             var grain = this.grainClient.GetGrain<ICounterGrain>(this.sessionId);
-            await grain.StopCounterTimer();
-            return Ok();
+            try 
+            {
+                await grain.StopCounterTimer();
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+            }
         }
 
         [HttpPost("~/incrementcounter")]
         public async Task<ActionResult> IncrementCounter()
         {
             var grain = this.grainClient.GetGrain<ICounterGrain>(this.sessionId);
-            await grain.IncrementCounter();
-            return Ok();
+            try
+            {
+                await grain.IncrementCounter();
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+            }
+            
         }
 
         [HttpPost("~/decrementcounter")]
         public async Task<ActionResult> DecrementCounter()
         {
             var grain = this.grainClient.GetGrain<ICounterGrain>(this.sessionId);
-            await grain.DecrementCounter();
-            return Ok();
+            try
+            {
+                await grain.DecrementCounter();
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+            }
         }
     }
 }

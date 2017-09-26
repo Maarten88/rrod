@@ -25,6 +25,17 @@ export default class Home extends React.Component<{}> {
                 </div>
             </Fullscreen>
             <Scroll.Element name="demo" />
+            <Fullscreen>
+                <div className="row" id="demo">
+                    <div className="container">
+                        <h1>Page 2</h1>
+                        <div className="down-link">
+                            <Scroll.Link to="footer" href="#" className="icon-link" smooth={true} duration={700} offset={-50} ><i className="fa fa-arrow-circle-down custom" ></i></Scroll.Link>
+                        </div>
+                    </div>
+                </div>
+            </Fullscreen>
+            <Scroll.Element name="footer" />
             <div className="row" id="footer">
                 <Footer />
             </div>

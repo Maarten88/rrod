@@ -1,4 +1,4 @@
-const isDevBuild = process.argv.indexOf('--env.prod') < 0;
+// const isDevBuild = process.argv.indexOf('--env.prod') < 0;
 const path = require('path');
 const webpack = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
@@ -15,17 +15,17 @@ module.exports = (env) => {
 
     const clientIfdefOptions = {
         SERVER: false,
-        "ifdef-verbose": false,        // add this for verbose output
-        "ifdef-triple-slash": false    // add this to use double slash comment instead of default triple slash
+        CLIENT: true
     };
 
     const serverIfdefOptions = {
-        SERVER: true
+        SERVER: true,
+        CLIENT: false
     };
 
     // pass as JSON object into query string ?json=...
-    const clientIfdefQuery = q.encode({ json: JSON.stringify(clientIfdefOptions) });
-    const serverIfdefQuery = q.encode({ json: JSON.stringify(serverIfdefOptions) });
+    // const clientIfdefQuery = q.encode({ json: JSON.stringify(clientIfdefOptions) });
+    // const serverIfdefQuery = q.encode({ json: JSON.stringify(serverIfdefOptions) });
 
     // Configuration in common to both client-side and server-side bundles
     const sharedConfig = () => ({
@@ -72,12 +72,21 @@ module.exports = (env) => {
                 {
                     test: /\.tsx?$/,
                     include: /ClientApp/,
-                    use: 'awesome-typescript-loader?silent=true&useCache=false&instance=at-client'
-                },
-                {
-                    test: /\.tsx?$/,
-                    include: /ClientApp/,
-                    use: `ifdef-loader?${clientIfdefQuery}`
+                    use: [
+                        {
+                            loader: 'awesome-typescript-loader',
+                            options: {
+                                configFileName: 'tsconfig.client.json',
+                                silent: true,
+                                useCache: false,
+                                instance: 'at-client'
+                            }
+                        },
+                        {
+                            loader: 'ifdef-loader',
+                            options: clientIfdefOptions
+                        }
+                    ] //'awesome-typescript-loader?silent=true&useCache=false&instance=at-client'
                 },
                 {
                     test: /\.(css|scss)$/,
@@ -124,11 +133,7 @@ module.exports = (env) => {
             // Plugins that apply in production builds only
             // new webpack.optimize.OccurrenceOrderPlugin(),
             // new webpack.optimize.ModuleConcatenationPlugin(), // makes bundle smaller, but gzipped it becomes larger!
-            new UglifyJSPlugin({
-                output: {
-                    comments: false,
-                }
-            }),
+            new UglifyJSPlugin(),
             new CompressionPlugin({
                 asset: "[path].gz[query]",
                 algorithm: "gzip",
@@ -153,12 +158,21 @@ module.exports = (env) => {
                 {
                     test: /\.tsx?$/,
                     include: /ClientApp/,
-                    use: 'awesome-typescript-loader?configFileName=tsconfig.server.json&useCache=false&instance=at-server'
-                },
-                {
-                    test: /\.tsx?$/,
-                    include: /ClientApp/,
-                    use: `ifdef-loader?${serverIfdefQuery}`
+                    use: [
+                        {
+                            loader: 'awesome-typescript-loader',
+                            options: {
+                                configFileName: 'tsconfig.json',
+                                silent: true,
+                                useCache: false,
+                                instance: 'at-server'
+                            }
+                        },
+                        {
+                            loader: 'ifdef-loader',
+                            options: serverIfdefOptions
+                        }
+                    ]
                 },
                 {
                     test: /\.json$/,
