@@ -12,10 +12,10 @@ This project demonstrates many technologies in context:
 - Bootstrap based UI using react-bootstrap and bootstrap-sass
 - Animations and transitions using react-motion
 - Asset pipeline driven by webpack, with Hot Module Reloading during development
-- Realtime updates from the server over Websockets
+- Realtime updates from the server over a SignalR Websocket connection
 
 ## Web front-end
-- Webserver based on Aspnet Core, running as a standalone executable
+- Webserver based on Aspnet Core 2.0, running as a standalone executable
 - Automatic request and use of Let's Encrypt TLS certificates on startup
 - AspNet JavascriptServices middleware driving webpack during development
 - AspNet middleware to serve gzip-compressed static assets when possible

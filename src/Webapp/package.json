@@ -7,7 +7,6 @@
     "not ie <= 8"
   ],
   "dependencies": {
-    "@aspnet/signalr-client": "^1.0.0-alpha1-final",
     "@types/classnames": "2.2.3",
     "@types/history": "4.6.0",
     "@types/js-cookie": "2.1.0",

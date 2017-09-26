@@ -2,12 +2,6 @@
 # yarn lockfile v1
 
 
-"@aspnet/signalr-client@^1.0.0-alpha1-final":
-  version "1.0.0-alpha1-final"
-  resolved "https://registry.yarnpkg.com/@aspnet/signalr-client/-/signalr-client-1.0.0-alpha1-final.tgz#1f590384a5a79c3ae1ea2b9e0f3d8d8cdac44f7d"
-  dependencies:
-    msgpack5 "^3.5.0"
-
 "@types/bl@*":
   version "0.8.31"
   resolved "https://registry.yarnpkg.com/@types/bl/-/bl-0.8.31.tgz#caa006702e13c36cda00345fa698b8d55c03113b"
@@ -3078,7 +3072,7 @@ ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"
 
-msgpack5@^3.5.0, msgpack5@^3.5.1:
+msgpack5@^3.5.1:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/msgpack5/-/msgpack5-3.5.1.tgz#9d97d00893a1d4a1b045be026a3ff7c9e50f301a"
   dependencies:
