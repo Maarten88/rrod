@@ -7,6 +7,7 @@ import * as Login from './Login';
 import * as User from './User';
 import * as Register from './Register';
 import * as Xsrf from './Xsrf';
+import { RouterState } from 'react-router-redux';
 
 // The top-level state object
 export interface ApplicationState {
@@ -18,7 +19,8 @@ export interface ApplicationState {
     register: Register.RegisterState,
     counter: Counter.CounterState,
     footer: Footer.FooterState,
-    contact: Contact.ContactState
+    contact: Contact.ContactState,
+    router: RouterState
 }
 
 // Whenever an action is dispatched, Redux will update each top-level application state property using
@@ -34,6 +36,7 @@ export const reducers = {
     counter: Counter.reducer,
     footer: Footer.reducer,
     contact: Contact.reducer
+    // router: RouterReducer is added in createStore
 };
 
 // This type can be used as a hint on action creators so that its 'dispatch' and 'getState' params are

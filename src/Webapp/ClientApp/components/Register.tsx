@@ -53,11 +53,11 @@ class Register extends React.Component<RegisterProps, RegisterViewModel> {
         return <Grid fluid>
             <Row>
                 <Grid>
-                    <h1>Registreer nieuwe gebruiker</h1>
+                    <h1>New user</h1>
                     <Well bsSize="sm">
                         <Form horizontal action="/contact" method="post" onSubmit={this.submit}>
                             <fieldset>
-                                <legend className="text-center header">Aanmelden</legend>
+                                <legend className="text-center header">Registration form</legend>
                                 <FormGroup>
                                     <Col md={10} mdOffset={1}>
                                         <FormControl name="email" type="text" onChange={this.handleChange} value={this.state.email} placeholder="email@domain.com" />
@@ -77,7 +77,7 @@ class Register extends React.Component<RegisterProps, RegisterViewModel> {
 
                                 <FormGroup>
                                     <Col md={11} className="text-center">
-                                        <Button type="submit" bsSize="lg" bsStyle="primary" disabled={this.props.isSubmitting}>{ this.props.isSubmitting ? "Spinner" : "Verstuur" }</Button>
+                                        <Button type="submit" bsSize="lg" bsStyle="primary" disabled={this.props.isSubmitting}>{ this.props.isSubmitting ? "Spinner" : "Register" }</Button>
                                     </Col>
                                 </FormGroup>
                             </fieldset>
@@ -86,7 +86,9 @@ class Register extends React.Component<RegisterProps, RegisterViewModel> {
                 </Grid>
             </Row>
             <br />
-            <Footer />
+            {/* <Row id="footer">
+                <Footer />
+            </Row> */}
         </Grid>
     }
 }

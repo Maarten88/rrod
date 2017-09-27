@@ -6,12 +6,19 @@ import { Provider } from 'react-redux';
 import { ConnectedRouter } from 'react-router-redux';
 import { createBrowserHistory } from 'history';
 import configureStore from './configureStore';
-// import * as Cookies from 'js-cookie';
 import { ApplicationState } from './store';
-import { guid, INIT_SESSION } from './store/Session';
 import { actionCreators as xsrfActionCreatores } from './store/Xsrf';
 import * as RoutesModule from './routes';
 let routes = RoutesModule.routes;
+
+// Temporary declaration while @types/react do not have the new React 16 hydrate function
+declare module 'react-dom' {
+    function hydrate<P>(
+        element: React.ReactElement<P>,
+        container: Element | null,
+        callback?: (component?: React.Component<P, React.ComponentState> | Element) => any
+    ): React.Component<P, React.ComponentState> | Element | void;
+}
 
 // import { actionCreators as sessionActionCreators } from './store/Session';
 // import { actionCreators as connectionActionCreators } from './store/SignalRConnection';
@@ -35,7 +42,7 @@ store.dispatch(xsrfActionCreatores.update());
 function renderApp() {
     // This code starts up the React app when it runs in a browser. It sets up the routing configuration
     // and injects the app into a DOM element.
-    ReactDOM.render(
+    ReactDOM.hydrate(
         <AppContainer>
             <Provider store={ store }>
                 <ConnectedRouter history={ history } children={ routes } />
@@ -60,7 +67,4 @@ if (module.hot) {
     });
 }
 
-setTimeout(async () => {
-    await store.dispatch(SignalRModule.actionCreators.startListener()); 
-});
-
+store.dispatch(SignalRModule.actionCreators.startListener());

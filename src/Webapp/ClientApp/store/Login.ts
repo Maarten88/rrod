@@ -40,51 +40,24 @@ type KnownAction = | StartLoginAction | LoginSuccessAction | LoginFailedAction |
 // ACTION CREATORS - These are functions exposed to UI components that will trigger a state transition.
 // They don't directly mutate state, but they can have external side-effects (such as loading data).
 
-function decodeToken(token) {
-    var parts = token.split('.');
-
-    if (parts.length !== 3) {
-        throw new Error('JWT must have 3 parts');
-    }
-
-    var decoded = urlBase64Decode(parts[1]);
-    if (!decoded) {
-        throw new Error('Cannot decode the token');
-    }
-
-    return JSON.parse(decoded);
-}
-
-function urlBase64Decode(str) {
-    var output = str.replace('-', '+').replace('_', '/');
-    switch (output.length % 4) {
-        case 0: { break; }
-        case 2: { output += '=='; break; }
-        case 3: { output += '='; break; }
-        default: {
-            throw 'Illegal base64url string!';
-        }
-    }
-    return window.atob(output); //polifyll https://github.com/davidchambers/Base64.js
-}
-
-
 export const actionCreators = {
     // login: () => <LoginAction>{ type: 'START_LOGIN' },
     loginSuccess: () => (dispatch, getState) => {
-        dispatch({ type: 'LOGIN_SUCCESS' });
-        // Get updated xsrf token
-        dispatch(XsrfActionCreators.refresh());
-        // Get updated menu; we may get extra options based on our role
-        // dispatch(NavMenuActionCreators.fetchMenu());
-
-        // Navigate home
-        dispatch(push('/'));
+        return (async () => {
+            dispatch({ type: 'LOGIN_SUCCESS' });
+            // Get updated xsrf token
+            await dispatch(XsrfActionCreators.refresh());
+            // Get updated menu; we may get extra options based on our role
+            // dispatch(NavMenuActionCreators.fetchMenu());
+    
+            // Navigate home
+            dispatch(push('/'));
+        })();
     },
     startLogin: (loginInput: LoginInputModel) => (dispatch, getState) => {
         dispatch({ type: 'START_LOGIN' });
 
-        (async () => {
+        return (async () => {
             var xsrf = getState().xsrf.token;
             let response = <Response>await fetch('/account/login', {
                 method: 'POST',
@@ -97,7 +70,7 @@ export const actionCreators = {
             });
 
             if (response.ok) {
-                dispatch(actionCreators.loginSuccess());
+                await dispatch(actionCreators.loginSuccess());
             } else {
                 // TODO: display error
                 dispatch({ type: 'LOGIN_FAILED' });
@@ -108,7 +81,7 @@ export const actionCreators = {
 
         dispatch({ type: 'START_LOGOUT' });
 
-        (async () => {
+        return (async () => {
             var xsrf = getState().xsrf.token;
             let response = <Response>await fetch('/account/logout', {
                 method: 'POST',
@@ -119,9 +92,13 @@ export const actionCreators = {
             });
 
             if (response.ok) {
+                // Get updated xsrf token. this actioncreator returns a promise, so we can await the call
+                await dispatch(XsrfActionCreators.refresh());
+                
+                // wait a second to see the transition
+                await new Promise(resolve => setTimeout(() => resolve(), 1000));
+
                 dispatch({ type: 'LOGOUT_SUCCESS' });
-                // Get updated xsrf token
-                dispatch(XsrfActionCreators.refresh());
                 // Get updated menu; we may get extra options based on our role
                 // dispatch(NavMenuActionCreators.fetchMenu());
                 // dispatch(push('/'));

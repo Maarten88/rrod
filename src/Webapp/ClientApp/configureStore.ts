@@ -30,5 +30,5 @@ export default function configureStore(history: History, initialState?: StoreMod
 }
 
 function buildRootReducer(allReducers: ReducersMapObject) {
-    return combineReducers<StoreModule.ApplicationState>({ ...allReducers, routing: routerReducer });
+    return combineReducers<StoreModule.ApplicationState>({ ...allReducers, router: routerReducer });
 }

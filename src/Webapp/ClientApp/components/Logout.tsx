@@ -3,20 +3,24 @@ import { connect } from 'react-redux'
 import { ApplicationState } from '../store';
 import { Redirect } from 'react-router-dom';
 import * as LoginStore from '../store/Login';
-
+import Fullscreen from '../lib/fullscreen'
 
 
 type LogoutProps = LoginStore.LoginState & typeof LoginStore.actionCreators;
 
 class Logout extends React.Component<LogoutProps> {
 
-    componentWillMount() {
+    componentDidMount() {
         this.props.logout();
     }
 
     render() {
         if (this.props.loggedin) {
-            return <div>Logging out....</div>;
+            return (
+                <Fullscreen>
+                    <div className="container">Logging out....</div>
+                </Fullscreen>
+            );
         } else {
             return <Redirect to="/" />;
         }
