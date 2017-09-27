@@ -34,6 +34,7 @@ namespace GrainInterfaces
         public bool AnonymousUser { get; set; }
     }
 
+    [Serializable]
     public class IdentityState
     {
         public string UserName { get; set; }
@@ -74,6 +75,7 @@ namespace GrainInterfaces
         public List<string> OwnedAppIds { get; set; }
     }
 
+    [Serializable]
     public class UserState
     {
         public IdentityState IdentityState { get; set; }
@@ -110,17 +112,20 @@ namespace GrainInterfaces
         }
     }
 
+    [Serializable]
     public class RegisterAccountAction : IAction
     {
         public IdentityState IdentityState { get; set; }
         public PersonalState PersonalState { get; set; }
     }
 
+    [Serializable]
     public class UpdateIdentityAction : IAction
     {
         public IdentityState IdentityState { get; set; }
     }
 
+    [Serializable]
     public class UpdatePersonalStateAction : IAction
     {
         public PersonalState PersonalState { get; set; }

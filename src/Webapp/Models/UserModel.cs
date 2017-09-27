@@ -1,8 +1,10 @@
 ﻿using GrainInterfaces;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
 namespace Webapp.Models
 {
+    [JsonObject]
     public class UserModel
     {
         [Required]

@@ -1,7 +1,9 @@
-// This file was generated from the Models.tst template
+﻿// This file was generated from the Models.tst template
 //
 
-export interface RegisterViewModel { 
+
+
+export class RegisterViewModel  { 
     email: string;
     password: string;
     confirmPassword: string;

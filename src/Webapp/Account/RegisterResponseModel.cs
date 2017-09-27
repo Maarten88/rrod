@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
+using Webapp.Models;
 
 namespace Webapp.Account
 {

@@ -10,22 +10,22 @@ namespace Webapp.Services
 {
     public class OrleansCache : IDistributedCache
     {
-        readonly IGrainFactory grainFactory;
-        public OrleansCache()
+        readonly IClusterClient grainClient;
+        public OrleansCache(IClusterClient grainClient)
         {
-            this.grainFactory = GrainClient.GrainFactory;
+            this.grainClient = grainClient;
         }
         public byte[] Get(string key) => this.GetAsync(key).Result;
 
-        public async Task<byte[]> GetAsync(string key, CancellationToken token = default(CancellationToken)) => (await this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Get()).Value;
+        public async Task<byte[]> GetAsync(string key, CancellationToken token = default(CancellationToken)) => (await this.grainClient.GetGrain<ICacheGrain<byte[]>>(key).Get()).Value;
 
         public void Refresh(string key) => this.RefreshAsync(key).Wait();
 
-        public Task RefreshAsync(string key, CancellationToken token = default(CancellationToken)) => this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Refresh();
+        public Task RefreshAsync(string key, CancellationToken token = default(CancellationToken)) => this.grainClient.GetGrain<ICacheGrain<byte[]>>(key).Refresh();
 
         public void Remove(string key) => this.RefreshAsync(key).Wait();
 
-        public Task RemoveAsync(string key, CancellationToken token = default(CancellationToken)) => this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Clear();
+        public Task RemoveAsync(string key, CancellationToken token = default(CancellationToken)) => this.grainClient.GetGrain<ICacheGrain<byte[]>>(key).Clear();
 
         public void Set(string key, byte[] value, DistributedCacheEntryOptions options) => this.SetAsync(key, value, options).Wait();
 
@@ -34,7 +34,7 @@ namespace Webapp.Services
             var creationTime = DateTimeOffset.UtcNow;
             var absoluteExpiration = GetAbsoluteExpiration(creationTime, options);
             var expirationSeconds = GetExpirationInSeconds(creationTime, absoluteExpiration, options);
-            return this.grainFactory.GetGrain<ICacheGrain<byte[]>>(key).Set(new Immutable<byte[]>(value), TimeSpan.FromSeconds((double)(expirationSeconds ?? 0)));
+            return this.grainClient.GetGrain<ICacheGrain<byte[]>>(key).Set(new Immutable<byte[]>(value), TimeSpan.FromSeconds((double)(expirationSeconds ?? 0)));
         }
 
         private static long? GetExpirationInSeconds(DateTimeOffset creationTime, DateTimeOffset? absoluteExpiration, DistributedCacheEntryOptions options)

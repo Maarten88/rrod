@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Webapp.Models
 {
+    [JsonObject]
     public class SubscribeModel
     {
         [EmailAddress]

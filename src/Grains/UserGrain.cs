@@ -21,6 +21,8 @@ namespace Grains
 
         public override async Task OnActivateAsync()
         {
+            await base.OnActivateAsync();
+
             // Publish all user state updates to a stream that other grains can subscribe to
             this.streamProvider = this.GetStreamProvider("Default");
             Guid userGuid = GuidUtility.Create(GuidUtility.UrlNamespace, this.GetPrimaryKeyString());
@@ -35,7 +37,6 @@ namespace Grains
             actionStreamSubscription = await actionStream.SubscribeAsync(async (action, st) => {
                 await this.Dispatch(action);
             });
-            await base.OnActivateAsync();
         }
 
 

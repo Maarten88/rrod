@@ -6,7 +6,10 @@ import { Provider } from 'react-redux';
 import { ConnectedRouter } from 'react-router-redux';
 import { createBrowserHistory } from 'history';
 import configureStore from './configureStore';
-import { ApplicationState }  from './store';
+// import * as Cookies from 'js-cookie';
+import { ApplicationState } from './store';
+import { guid, INIT_SESSION } from './store/Session';
+import { actionCreators as xsrfActionCreatores } from './store/Xsrf';
 import * as RoutesModule from './routes';
 let routes = RoutesModule.routes;
 
@@ -23,6 +26,11 @@ const history = createBrowserHistory({ basename: baseUrl });
 // Get the application-wide store instance, prepopulating with state from the server where available.
 const initialState = (window as any).initialReduxState as ApplicationState;
 const store = configureStore(history, initialState);
+
+// initialize session and xsrf clientside
+//const sessionId = Cookies.get("SESSION") || guid();
+// Initialize the xsrf token
+store.dispatch(xsrfActionCreatores.update());
 
 function renderApp() {
     // This code starts up the React app when it runs in a browser. It sets up the routing configuration

@@ -1,7 +1,6 @@
-import { GETUSER_RECEIVED } from './store/User';
-import { LOGIN_SUCCESS } from './store/Login';
-import { TOKEN_RECEIVED } from './store/Auth';
 import { INIT_SESSION } from './store/Session';
+import { SET_XSRF_TOKEN } from './store/Xsrf';
+import { LOGIN_SUCCESS } from './store/Login';
 import * as React from 'react';
 import { Provider } from 'react-redux';
 import { renderToString } from 'react-dom/server';
@@ -21,14 +20,12 @@ export default createServerRenderer(params => {
         const store = configureStore(createMemoryHistory());
         store.dispatch(replace(urlAfterBasename));
 
-        store.dispatch({ type: INIT_SESSION, payload: { xsrfToken: params.data.xsrfToken, id: params.data.sessionId } });
-        
+        store.dispatch({ type: INIT_SESSION, payload: params.data.sessionId });
+        store.dispatch({ type: SET_XSRF_TOKEN, payload: params.data.xsrfToken });
+
         if (params.data.isAuthenticated) {
             store.dispatch({ type: LOGIN_SUCCESS });
-            store.dispatch({ type: TOKEN_RECEIVED, payload: { accessToken: params.data.accessToken } });
-            store.dispatch({ type: GETUSER_RECEIVED, payload: params.data.userModel });
         }
-        
         // Prepare an instance of the application and perform an inital render that will
         // cause any async tasks (e.g., data access) to begin
         const routerContext: any = {};

@@ -6,13 +6,13 @@ import * as Connection from './SignalRConnection';
 import * as Login from './Login';
 import * as User from './User';
 import * as Register from './Register';
-import * as Auth from './Auth';
+import * as Xsrf from './Xsrf';
 
 // The top-level state object
 export interface ApplicationState {
-    session: Session.SettingsState,
+    session: Session.SessionState,
+    xsrf: Xsrf.XsrfState,
     connection: Connection.ConnectionState,
-    auth: Auth.AuthState,
     user: User.UserModel,
     login: Login.LoginState,
     register: Register.RegisterState,
@@ -27,7 +27,7 @@ export interface ApplicationState {
 export const reducers = {
     session: Session.reducer,
     connection: Connection.reducer,
-    auth: Auth.reducer,
+    xsrf: Xsrf.reducer,
     user: User.reducer,
     login: Login.reducer,
     register: Register.reducer,

@@ -7,6 +7,7 @@ using System;
 using System.Threading.Tasks;
 using Webapp.Services;
 using Microsoft.AspNetCore.Hosting;
+using Webapp.Models;
 
 namespace Webapp.Controllers
 {

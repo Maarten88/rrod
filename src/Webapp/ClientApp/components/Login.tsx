@@ -1,25 +1,21 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, RouteComponentProps } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { autobind } from 'core-decorators';
 import { Grid, Col, Row, Button, Checkbox, Form, FormGroup, FormControl, InputGroup, InputGroupAddon } from 'react-bootstrap';
 import { ApplicationState } from '../store';
 import * as LoginStore from '../store/Login';
+import { LoginInputModel } from '../server/LoginInputModel';
 
-type LoginProps = LoginStore.LoginState & typeof LoginStore.actionCreators;
+type LoginProps = LoginStore.LoginState & typeof LoginStore.actionCreators & RouteComponentProps<{}>;
 
-interface LoginState {
-    userName: string;
-    password: string;
-}
-
-class Login extends React.Component<LoginProps, LoginState> {
+class Login extends React.Component<LoginProps, LoginInputModel> {
 
     constructor() {
         super();
         this.state = {
-            userName: '',
+            email: '',
             password: ''
         };
     }
@@ -31,7 +27,7 @@ class Login extends React.Component<LoginProps, LoginState> {
 
     @autobind
     private login(event: React.FormEvent<Form>) {
-        this.props.login({ email: this.state.userName, password: this.state.password, rememberLogin: true, returnUrl: '/' });
+        this.props.startLogin(this.state);
         event.preventDefault();
     }
 
@@ -42,7 +38,7 @@ class Login extends React.Component<LoginProps, LoginState> {
 
     public renderLoggedIn() {
         return <Grid>
-            <h1>U bent ingelogd!</h1>
+            <h1>Welcome, { this.props.userName }</h1>
 
             <form action="~/account" method="post">
                 <button className="btn btn-lg btn-warning" type="submit">Query the resource controller</button>
@@ -89,7 +85,7 @@ class Login extends React.Component<LoginProps, LoginState> {
                         <FormGroup validationState={this.getValidationState()}>
                             <InputGroup>
                                 <InputGroup.Addon><i className="fa fa-user" /></InputGroup.Addon>
-                                <FormControl name="userName" type="text" onChange={this.handleChange} placeholder="Login Naam" />
+                                <FormControl name="email" type="text" onChange={this.handleChange} placeholder="Login Naam" />
                             </InputGroup>
                             <FormControl.Feedback />
                         </FormGroup>
@@ -123,7 +119,7 @@ class Login extends React.Component<LoginProps, LoginState> {
     }
 
     public render() {
-        if (this.props.authenticated)
+        if (this.props.loggedin)
             return this.renderLoggedIn();
         else
             return this.renderAnonymous();

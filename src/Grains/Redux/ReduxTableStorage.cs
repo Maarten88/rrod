@@ -70,7 +70,15 @@ namespace Grains.Redux
                         // var storageAccount = CloudStorageAccount.DevelopmentStorageAccount;
                         var tableClient = storageAccount.CreateCloudTableClient();
                         table = tableClient.GetTableReference(tableName);
-                        await table.CreateIfNotExistsAsync();
+                        try
+                        {
+                            await table.CreateIfNotExistsAsync();
+                        }
+                        catch (Exception e)
+                        {
+                            table = null;
+                            throw new Exception("Error creating storage table: " + e.Message);
+                        }
 
                         try
                         {

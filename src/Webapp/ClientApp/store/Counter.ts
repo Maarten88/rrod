@@ -71,25 +71,25 @@ export const actionCreators = {
     increment: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
         dispatch({ type: Server.INCREMENT_COUNTER });
         var state = getState();
-        let response = await postEffect('/incrementcounter', state.session.xsrfToken);
+        let response = await postEffect('/incrementcounter', state.xsrf.token);
         console.log(response);
     },
     decrement: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
         dispatch({ type: Server.DECREMENT_COUNTER });
         var state = getState();
-        let response = await postEffect('/decrementcounter', state.session.xsrfToken);
+        let response = await postEffect('/decrementcounter', state.xsrf.token);
         console.log(response);
     },
     start: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
         dispatch({ type: Server.START_COUNTER });
         var state = getState();
-        let response = await postEffect('/startcounter', state.session.xsrfToken);
+        let response = await postEffect('/startcounter', state.xsrf.token);
         console.log(response);
     },
     stop: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
         dispatch({ type: Server.STOP_COUNTER });
         var state = getState();
-        let response = await postEffect('/stopcounter', state.session.xsrfToken);
+        let response = await postEffect('/stopcounter', state.xsrf.token);
         console.log(response);
     }
 };

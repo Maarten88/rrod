@@ -1,15 +1,16 @@
 {
     "include": [],
     "compilerOptions": {
-        "baseUrl": ".",
+        "baseUrl": "./",
+        "module": "commonjs",
         "moduleResolution": "node",
         "target": "es2017",
         "jsx": "react",
         "experimentalDecorators": true,
         "sourceMap": true,
-        "skipDefaultLibCheck": true,
+        // "skipDefaultLibCheck": true,
         "lib": [ "es2017", "dom" ],
-        "allowJs": true,
+        "allowJs": false,
         "types": [ 
             "webpack-env",
             "EventSource"

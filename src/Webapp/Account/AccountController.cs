@@ -1,46 +1,53 @@
-﻿using System;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
+﻿using IdentityServer4.Services;
+using IdentityServer4.Stores;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Logging;
-using IdentityServer4.Services;
-using IdentityServer4.Stores;
-using Microsoft.AspNetCore.Http.Authentication;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Antiforgery;
+using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using Webapp.Identity;
-using Webapp.Services;
-using Webapp.Controllers;
+using Webapp.Models;
+
 namespace Webapp.Account
 {
     [Authorize]
     [Route("[controller]/[action]")]
     public class AccountController : Controller
     {
+        private readonly IIdentityServerInteractionService interaction;
         private readonly UserManager<ApplicationUser> userManager;
         private readonly SignInManager<ApplicationUser> signInManager;
         private readonly ILogger logger;
-        private readonly IIdentityServerInteractionService interaction;
+        // private readonly IIdentityServerInteractionService interaction;
         private readonly IClientStore clientStore;
         // private readonly AccountService _account;
+        private readonly IAuthenticationSchemeProvider schemeProvider;
+        private readonly IEventService events;
+        private readonly IUserClaimsPrincipalFactory<ApplicationUser> claimsPrincipalFactory;
 
         public AccountController(
+            IIdentityServerInteractionService interaction,
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             ILoggerFactory loggerFactory,
-            IIdentityServerInteractionService interaction,
-            IHttpContextAccessor httpContext,
+            IAuthenticationSchemeProvider schemeProvider,
+            IUserClaimsPrincipalFactory<ApplicationUser> claimsPrincipalFactory,
+            IEventService events,
             IClientStore clientStore)
         {
+            this.interaction = interaction;
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.logger = loggerFactory.CreateLogger<AccountController>();
-            this.interaction = interaction;
+            this.schemeProvider = schemeProvider;
+            this.claimsPrincipalFactory = claimsPrincipalFactory;
+            this.events = events;
             this.clientStore = clientStore;
             // _account = new AccountService(interaction, httpContext, clientStore);
         }
@@ -52,21 +59,20 @@ namespace Webapp.Account
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login([FromBody]LoginInputModel model)
         {
+            // Hack to work around rc1 bug
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
+                var result = await this.signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
                 if (result.Succeeded)
                 {
-                    logger.LogInformation(1, "User logged in.");
-                    // because we are logging in through an api, we need to generate and send back a new XsrfToken
-
-                    return Ok(new LoginResponseModel());
+                    this.logger.LogInformation(1, "User logged in.");
+                    return Ok(new LoginResponseModel { Result = ApiResult.AsSuccess() });
                 }
                 else
                 {
-                    logger.LogWarning(2, "User login failed.");
+                    this.logger.LogWarning(2, "User login failed.");
                     var response = new LoginResponseModel
                     {
                         IsLockedOut = result.IsLockedOut,
@@ -88,29 +94,19 @@ namespace Webapp.Account
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AllowAnonymous]
+        // [AllowAnonymous]
         public async Task<IActionResult> Logout(LogoutInputModel model)
         {
-            //var vm = await _account.BuildLoggedOutViewModelAsync(model.LogoutId);
-            //if (vm.TriggerExternalSignout)
-            //{
-            //    string url = Url.Action("Logout", new { logoutId = vm.LogoutId });
-            //    try
-            //    {
-            //        // hack: try/catch to handle social providers that throw
-            //        await HttpContext.Authentication.SignOutAsync(vm.ExternalAuthenticationScheme,
-            //            new AuthenticationProperties { RedirectUri = url });
-            //    }
-            //    catch (NotSupportedException) // this is for the external providers that don't have signout
-            //    {
-            //    }
-            //    catch (InvalidOperationException) // this is for Windows/Negotiate
-            //    {
-            //    }
-            //}
+            var user = HttpContext.User;
+            if (user?.Identity.IsAuthenticated == true)
+            {
+                // delete local authentication cookie
+                await this.signInManager.SignOutAsync();
+                // await HttpContext.SignOutAsync();
 
-            // delete authentication cookie
-            await signInManager.SignOutAsync();
+                // raise the logout event
+                // await this.events.RaiseAsync(new UserLogoutSuccessEvent(user.GetSubjectId(), user.GetName()));
+            }
 
             return Ok("logged_out");
         }
@@ -229,6 +225,35 @@ namespace Webapp.Account
                 return BadRequest(new ApiModel(apiResult));
             }
         }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetUser()
+        {
+            UserModel userModel;
+            // var userManager = this.serviceProvider.GetService<UserManager<ApplicationUser>>();
+            if (this.User.Identity.IsAuthenticated)
+            {
+                var user = await this.userManager.FindByIdAsync(this.User.Identity.Name);
+                userModel = new UserModel
+                {
+                    IsAuthenticated = true,
+                    UserId = user.UserId,
+                    Email = user.Email,
+                    FirstName = user.PersonalData?.FirstName,
+                    LastName = user.PersonalData?.LastName
+                };
+            }
+            else
+            {
+                userModel = new UserModel
+                {
+                    IsAuthenticated = false
+                };
+            }
+            return Ok(userModel);
+        }
+
 
         //
         // POST: /Account/ExternalLoginConfirmation
@@ -492,17 +517,44 @@ namespace Webapp.Account
         private IActionResult RedirectToLocal(string returnUrl)
         {
             // if (Url.IsLocalUrl(returnUrl))
-            if (Url.IsLocalUrl(returnUrl))
+            if (this.Request.IsLocal() && !string.IsNullOrEmpty(returnUrl))
             {
                 return Redirect(returnUrl);
             }
             else
             {
-                return Redirect("~/");
+                return RedirectToAction(nameof(Controllers.HomeController.Index), "Home");
             }
         }
 
-
         #endregion
     }
+
+    static class HttpRequestExtensions
+    {
+        public static bool IsLocal(this HttpRequest req)
+        {
+            var connection = req.HttpContext.Connection;
+            if (connection.RemoteIpAddress != null)
+            {
+                if (connection.LocalIpAddress != null)
+                {
+                    return connection.RemoteIpAddress.Equals(connection.LocalIpAddress);
+                }
+                else
+                {
+                    return IPAddress.IsLoopback(connection.RemoteIpAddress);
+                }
+            }
+
+            // for in memory TestServer or when dealing with default connection info
+            if (connection.RemoteIpAddress == null && connection.LocalIpAddress == null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+    }
+
 }

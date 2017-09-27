@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using GrainInterfaces;
+using Microsoft.WindowsAzure.Storage;
 
 namespace Grains.Redux
 {
@@ -50,13 +51,21 @@ namespace Grains.Redux
         private async Task ReadStateAsync()
         {
             var state = Tuple.Create<TState, uint>(null, 0);
-            var storageActonObservable = storage.ReadObservable(this.tableKey, this.GetLogger());
-            state = await storageActonObservable.Aggregate(state, (s, a) => 
-                {
-                    s = Tuple.Create(this.reducer(s.Item1, a.Action), a.Serial);
-                    return s;
-                });
-            this.Store = new ReduxGrainStore<TState>(this.reducer, state.Item1, state.Item2);
+            try
+            {
+                var storageActonObservable = storage.ReadObservable(this.tableKey, this.GetLogger());
+                state = await storageActonObservable.Aggregate(state, (s, a) =>
+                    {
+                        s = Tuple.Create(this.reducer(s.Item1, a.Action), a.Serial);
+                        return s;
+                    });
+                this.Store = new ReduxGrainStore<TState>(this.reducer, state.Item1, state.Item2);
+            }
+            catch (Exception e)
+            {
+                // Can't connect to table storage server. Throw a serializable exception
+                throw new Exception("Can't connect to table storage service: " + e.Message);
+            }
         }
 
         public Task<IAction> Dispatch(IAction action)

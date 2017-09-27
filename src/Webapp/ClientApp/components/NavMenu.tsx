@@ -51,6 +51,6 @@ class NavMenu extends React.Component<NavMenuProps> {
 }
 
 export default connect(
-    (state: ApplicationState) => { return { isAuthenticated: state.login.authenticated, roles: [] }; }, // Selects which state properties are merged into the component's props
+    (state: ApplicationState) => { return { isAuthenticated: state.login.loggedin, roles: [] }; }, // Selects which state properties are merged into the component's props
     {}                 // Selects which action creators are merged into the component's props
 )(NavMenu);

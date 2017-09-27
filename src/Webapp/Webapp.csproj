@@ -22,11 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="ClientApp\server\ApiModel.ts">
+      <CustomToolNamespace>Models\ApiModel.cs</CustomToolNamespace>
+    </None>
     <None Update="ClientApp\server\ApiResult.ts">
       <CustomToolNamespace>Models\ApiResult.cs</CustomToolNamespace>
-    </None>
-    <None Update="ClientApp\server\ClientApplication.ts">
-      <CustomToolNamespace>..\GrainInterfaces\IClientApplicationGrain.cs</CustomToolNamespace>
     </None>
     <None Update="ClientApp\server\Counter.ts">
       <CustomToolNamespace>..\GrainInterfaces\ICounterGrain.cs</CustomToolNamespace>
@@ -34,35 +34,23 @@
     <None Update="ClientApp\server\ExternalLoginConfirmationViewModel.ts">
       <CustomToolNamespace>Account\ExternalLoginConfirmationViewModel.cs</CustomToolNamespace>
     </None>
-    <None Update="ClientApp\server\ExternalProvider.ts">
-      <CustomToolNamespace>Account\ExternalProvider.cs</CustomToolNamespace>
-    </None>
     <None Update="ClientApp\server\ForgotPasswordViewModel.ts">
       <CustomToolNamespace>Account\ForgotPasswordViewModel.cs</CustomToolNamespace>
-    </None>
-    <None Update="ClientApp\server\LoggedOutViewModel.ts">
-      <CustomToolNamespace>Account\LoggedOutViewModel.cs</CustomToolNamespace>
     </None>
     <None Update="ClientApp\server\LoginInputModel.ts">
       <CustomToolNamespace>Account\LoginInputModel.cs</CustomToolNamespace>
     </None>
-    <None Update="ClientApp\server\LoginViewModel.ts">
-      <CustomToolNamespace>Account\LoginViewModel.cs</CustomToolNamespace>
+    <None Update="ClientApp\server\LoginResponseModel.ts">
+      <CustomToolNamespace>Account\LoginResponseModel.cs</CustomToolNamespace>
     </None>
-    <None Update="ClientApp\server\LogoutInputModel.ts">
-      <CustomToolNamespace>Account\LogoutInputModel.cs</CustomToolNamespace>
-    </None>
-    <None Update="ClientApp\server\LogoutViewModel.ts">
-      <CustomToolNamespace>Account\LogoutViewModel.cs</CustomToolNamespace>
+    <None Update="ClientApp\server\RegisterResponseModel.ts">
+      <CustomToolNamespace>Account\RegisterResponseModel.cs</CustomToolNamespace>
     </None>
     <None Update="ClientApp\server\RegisterViewModel.ts">
       <CustomToolNamespace>Account\RegisterViewModel.cs</CustomToolNamespace>
     </None>
     <None Update="ClientApp\server\ResetPasswordViewModel.ts">
       <CustomToolNamespace>Account\ResetPasswordViewModel.cs</CustomToolNamespace>
-    </None>
-    <None Update="ClientApp\server\SendCodeViewModel.ts">
-      <CustomToolNamespace>Account\SendCodeViewModel.cs</CustomToolNamespace>
     </None>
     <None Update="ClientApp\server\Subscribe.ts">
       <CustomToolNamespace>Models\Subscribe.cs</CustomToolNamespace>
@@ -71,10 +59,7 @@
       <CustomToolNamespace>..\GrainInterfaces\IUserGrain.cs</CustomToolNamespace>
     </None>
     <None Update="ClientApp\server\UserModel.ts">
-      <CustomToolNamespace>Account\UserModel.cs</CustomToolNamespace>
-    </None>
-    <None Update="ClientApp\server\VerifyCodeViewModel.ts">
-      <CustomToolNamespace>Account\VerifyCodeViewModel.cs</CustomToolNamespace>
+      <CustomToolNamespace>Models\UserModel.cs</CustomToolNamespace>
     </None>
     <None Update="ClientApp\typewriter\ApiResult.ts">
       <CustomToolNamespace>Models\ApiResult.cs</CustomToolNamespace>

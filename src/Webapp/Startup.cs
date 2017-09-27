@@ -85,8 +85,7 @@ namespace Webapp
             .AddUserStore<OrleansUserStore>()
             .AddRoleStore<OrleansRoleStore>()
             .AddUserManager<ApplicationUserManager>()
-            .AddDefaultTokenProviders()
-            .AddIdentityServer();
+            .AddDefaultTokenProviders();
 
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();

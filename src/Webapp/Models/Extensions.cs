@@ -2,20 +2,23 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-public static class ModelStateExtensions
+namespace Webapp.Models
 {
-    public static ApiResult AsApiResult(this ModelStateDictionary modelState)
+    public static class ModelStateExtensions
     {
-        var result = new ApiResult();
-
-        foreach (var val in modelState.Values)
+        public static ApiResult AsApiResult(this ModelStateDictionary modelState)
         {
-            if (val.ValidationState == ModelValidationState.Invalid)
+            var result = new ApiResult();
+
+            foreach (var val in modelState.Values)
             {
-                result.Errors.Add(val.ToString(), new List<string>(val.Errors.Select(error => error.ErrorMessage)));
+                if (val.ValidationState == ModelValidationState.Invalid)
+                {
+                    result.Errors.Add(val.ToString(), new List<string>(val.Errors.Select(error => error.ErrorMessage)));
+                }
             }
+            result.Message = $"{modelState.ErrorCount} error(s) found";
+            return result;
         }
-        result.Message = $"{modelState.ErrorCount} error(s) found";
-        return result;
     }
 }

@@ -17,6 +17,14 @@ namespace Webapp.Identity
                                     IUserTwoFactorStore<ApplicationUser>, IUserLoginStore<ApplicationUser>,
                                     IUserAuthenticationTokenStore<ApplicationUser>
     {
+        private readonly IClusterClient grainClient;
+
+        public OrleansUserStore(IClusterClient grainClient)
+        {
+            this.grainClient = grainClient;
+        }
+
+
         public Task AddLoginAsync(ApplicationUser user, UserLoginInfo login, CancellationToken cancellationToken)
         {
             user.ExternalLogins.Add(new ExternalLoginState { LoginProvider = login.LoginProvider, ProviderKey = login.ProviderKey });
@@ -70,18 +78,18 @@ namespace Webapp.Identity
             {
                 var taskList = new List<Task>();
 
-                var userGrain = GrainClient.GrainFactory.GetGrain<IUserGrain>(user.NormalizedUserName);
+                var userGrain = this.grainClient.GetGrain<IUserGrain>(user.NormalizedUserName);
                 await userGrain.Dispatch(registerAccount);
 
-                var userNameIndexGrain = GrainClient.GrainFactory.GetGrain<IGrainIndexGrain<IUserGrain>>($"username-{user.NormalizedUserName}");
+                var userNameIndexGrain = this.grainClient.GetGrain<IGrainIndexGrain<IUserGrain>>($"username-{user.NormalizedUserName}");
                 await userNameIndexGrain.Set(userGrain);
 
-                var emailIndexGrain = GrainClient.GrainFactory.GetGrain<IGrainIndexGrain<IUserGrain>>($"email-{user.NormalizedEmail}");
+                var emailIndexGrain = this.grainClient.GetGrain<IGrainIndexGrain<IUserGrain>>($"email-{user.NormalizedEmail}");
                 await emailIndexGrain.Set(userGrain);
 
                 foreach (var login in registerAccount.IdentityState.ExternalLogins)
                 {
-                    var loginIndexGrain = GrainClient.GrainFactory.GetGrain<IGrainIndexGrain<IUserGrain>>($"login-{login.LoginProvider}-{login.ProviderKey}");
+                    var loginIndexGrain = this.grainClient.GetGrain<IGrainIndexGrain<IUserGrain>>($"login-{login.LoginProvider}-{login.ProviderKey}");
                     taskList.Add(loginIndexGrain.Set(userGrain));
                 }
 
@@ -166,7 +174,7 @@ namespace Webapp.Identity
         //        throw new ArgumentException("The token type cannot be null or empty.");
         //    }
 
-        //    var grain = GrainClient.GrainFactory.GetGrain<IApplicationGrain>(client);
+        //    var grain = this.grainClient.GetGrain<IApplicationGrain>(client);
         //    var application = await grain.GetApplication();
         //    if (application == null)
         //    {
@@ -232,7 +240,7 @@ namespace Webapp.Identity
 
         public async Task<ApplicationUser> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
         {
-            var indexGrain = GrainClient.GrainFactory.GetGrain<IGrainIndexGrain<IUserGrain>>($"email-{normalizedEmail}");
+            var indexGrain = this.grainClient.GetGrain<IGrainIndexGrain<IUserGrain>>($"email-{normalizedEmail}");
             var userGrain = await indexGrain.Get();
             if (userGrain == null) return null;
             var userState = await userGrain.GetUserState();
@@ -244,7 +252,7 @@ namespace Webapp.Identity
 
         public async Task<ApplicationUser> FindByIdAsync(string userId, CancellationToken cancellationToken)
         {
-            var userGrain = GrainClient.GrainFactory.GetGrain<IUserGrain>(userId.ToUpperInvariant());
+            var userGrain = this.grainClient.GetGrain<IUserGrain>(userId.ToUpperInvariant());
             var userState = await userGrain.GetUserState();
             if (userState?.IdentityState.Registered != null)
                 return new ApplicationUser(userId, userState.IdentityState);
@@ -254,7 +262,7 @@ namespace Webapp.Identity
 
         public async Task<ApplicationUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
-            var indexGrain = GrainClient.GrainFactory.GetGrain<IGrainIndexGrain<IUserGrain>>($"login-{loginProvider}-{providerKey}");
+            var indexGrain = this.grainClient.GetGrain<IGrainIndexGrain<IUserGrain>>($"login-{loginProvider}-{providerKey}");
             var userGrain = await indexGrain.Get();
             if (userGrain == null) return null;
             var userState = await userGrain.GetUserState();
@@ -266,7 +274,7 @@ namespace Webapp.Identity
 
         public async Task<ApplicationUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
         {
-            var indexGrain = GrainClient.GrainFactory.GetGrain<IGrainIndexGrain<IUserGrain>>($"username-{normalizedUserName}");
+            var indexGrain = this.grainClient.GetGrain<IGrainIndexGrain<IUserGrain>>($"username-{normalizedUserName}");
             var userGrain = await indexGrain.Get();
             if (userGrain == null) return null;
             var userState = await userGrain.GetUserState();
@@ -495,7 +503,7 @@ namespace Webapp.Identity
 
         public async Task<IdentityResult> UpdateAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            var userGrain = GrainClient.GrainFactory.GetGrain<IUserGrain>(user.UserId);
+            var userGrain = this.grainClient.GetGrain<IUserGrain>(user.UserId);
            
             var update = new UpdateIdentityAction
             {

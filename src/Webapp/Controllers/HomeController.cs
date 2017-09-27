@@ -32,6 +32,13 @@ using System.Security.Cryptography;
 
 namespace Webapp.Controllers
 {
+    public static class Constants
+    {
+        public const string SessionCookieName = "SESSION";
+        public const string AntiForgeryCookieName = "XSRF-TOKEN"; // send the xsrftoken in a readable cookie for the client to read and send back in a header against the second unreadable cookie
+    }
+
+
     // The home controller generates the initial home page, as wel as the aspnet-javascript serverside fallback pages (mostly for seo)
     public class HomeController : Controller
     {
@@ -40,12 +47,14 @@ namespace Webapp.Controllers
         readonly Guid sessionId;
         readonly IServiceProvider serviceProvider;
         readonly ILoggerFactory loggerFactory;
+        readonly IClusterClient grainClient;
 
-        public HomeController(ITempDataProvider cookie, IAntiforgery antiForgery, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, ILoggerFactory loggerFactory) : base()
+        public HomeController(ITempDataProvider cookie, IAntiforgery antiForgery, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, IClusterClient grainClient, ILoggerFactory loggerFactory) : base()
         {
             // this.cookie = cookie;
             this.antiForgery = antiForgery;
             this.serviceProvider = serviceProvider;
+            this.grainClient = grainClient;
             this.loggerFactory = loggerFactory;
 
             // Create session id in an client-unreadable cookie
@@ -75,6 +84,16 @@ namespace Webapp.Controllers
         public async Task<ActionResult> Index()
         {
             var tokens = this.antiForgery.GetAndStoreTokens(this.HttpContext);
+            if (!string.IsNullOrWhiteSpace(tokens.RequestToken))
+            {
+                var cookieOptions = new CookieOptions
+                {
+                    HttpOnly = false,
+                    Secure = this.Request.IsHttps
+                };
+                this.Response.Cookies.Append(Constants.AntiForgeryCookieName, tokens.RequestToken, cookieOptions);
+            }
+
             // Render this token in a div, so our javascript can read it and send it, and send it in the ajax request header where it can be validated against the XSRF-TOKEN cookie
             this.ViewBag.AntiForgeryRequestToken = tokens.RequestToken;
             this.ViewBag.SessionId = this.sessionId;
@@ -94,32 +113,32 @@ namespace Webapp.Controllers
                     LastName = user.PersonalData?.LastName
                 };
 
-                var client = Config.GetClients().Where(c => c.ClientId == "Webapp").FirstOrDefault();
+                //    var client = Config.GetClients().Where(c => c.ClientId == "Webapp").FirstOrDefault();
 
-                var claims = new List<Claim>();
-                // client claims
-                claims.Add(new Claim(JwtClaimTypes.ClientId, client.ClientId));
-                claims.AddRange(client.AllowedScopes.Select(name => new Claim(JwtClaimTypes.Scope, name)));
+                //    var claims = new List<Claim>();
+                //    // client claims
+                //    claims.Add(new Claim(JwtClaimTypes.ClientId, client.ClientId));
+                //    claims.AddRange(client.AllowedScopes.Select(name => new Claim(JwtClaimTypes.Scope, name)));
 
-                // subject claims
-                claims.Add(new Claim(JwtClaimTypes.Subject, user.UserId));
-                claims.Add(new Claim(JwtClaimTypes.AuthenticationTime, DateTime.UtcNow.ToEpochTime().ToString(), ClaimValueTypes.Integer)); // DateTime.UtcNow.ToEpochTime().ToString()
-                claims.Add(new Claim(JwtClaimTypes.IdentityProvider, this.User.GetIdentityProvider()));
+                //    // subject claims
+                //    claims.Add(new Claim(JwtClaimTypes.Subject, user.UserId));
+                //    claims.Add(new Claim(JwtClaimTypes.AuthenticationTime, DateTime.UtcNow.ToEpochTime().ToString(), ClaimValueTypes.Integer)); // DateTime.UtcNow.ToEpochTime().ToString()
+                //    claims.Add(new Claim(JwtClaimTypes.IdentityProvider, this.User.GetIdentityProvider()));
 
-                var issuer = this.HttpContext.GetIdentityServerIssuerUri();
-                var token = new Token(OidcConstants.TokenTypes.AccessToken)
-                {
-                    Audiences = { issuer }, // .EnsureTrailingSlash()
-                    Issuer = issuer,
-                    Lifetime = client.AccessTokenLifetime,
-                    Claims = claims.Distinct(new ClaimComparer()).ToList(),
-                    ClientId = client.ClientId,
-                    AccessTokenType = client.AccessTokenType
-                };
+                //    var issuer = this.HttpContext.GetIdentityServerIssuerUri();
+                //    var token = new Token(OidcConstants.TokenTypes.AccessToken)
+                //    {
+                //        Audiences = { issuer }, // .EnsureTrailingSlash()
+                //        Issuer = issuer,
+                //        Lifetime = client.AccessTokenLifetime,
+                //        Claims = claims.Distinct(new ClaimComparer()).ToList(),
+                //        ClientId = client.ClientId,
+                //        AccessTokenType = client.AccessTokenType
+                //    };
 
-                ITokenService tokenService = this.serviceProvider.GetRequiredService<ITokenService>();
-                var securityToken = await tokenService.CreateSecurityTokenAsync(token);
-                ViewBag.AccessToken = securityToken;
+                //    ITokenService tokenService = this.serviceProvider.GetRequiredService<ITokenService>();
+                //    var securityToken = await tokenService.CreateSecurityTokenAsync(token);
+                //    ViewBag.AccessToken = securityToken;
             }
             else
             {
@@ -132,6 +151,27 @@ namespace Webapp.Controllers
             this.ViewBag.UserModel = userModel;
             return View();
         }
+
+        // Used after login/logout
+        [HttpGet, Route("~/xsrfrefresh")]
+        public ActionResult XsrfRefresh()
+        {
+            var tokens = this.antiForgery.GetAndStoreTokens(this.HttpContext);
+            if (!string.IsNullOrWhiteSpace(tokens.RequestToken))
+            {
+                // we send the cookie in a readable form to the browser, where it can be read 
+                // by script coming from our own domain, and put in the clientside store
+                var cookieOptions = new CookieOptions
+                {
+                    HttpOnly = false,
+                    Secure = this.Request.IsHttps
+                };
+                this.Response.Cookies.Append(Constants.AntiForgeryCookieName, tokens.RequestToken, cookieOptions);
+            }
+
+            return Ok();
+        }
+
 
         public IActionResult Error()
         {
@@ -149,7 +189,7 @@ namespace Webapp.Controllers
             }
             try
             {
-                var emailGrain = GrainClient.GrainFactory.GetGrain<IEmailGrain>(0);
+                var emailGrain = this.grainClient.GetGrain<IEmailGrain>(0);
                 await emailGrain.SendEmail(new Email {
                             To = new List<string> { "maarten@sikkema.com" },
                             MessageBody = $"<p>Keep me informed: {model.Email}</p>",
