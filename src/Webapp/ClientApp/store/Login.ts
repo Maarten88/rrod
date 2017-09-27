@@ -44,14 +44,15 @@ export const actionCreators = {
     // login: () => <LoginAction>{ type: 'START_LOGIN' },
     loginSuccess: () => (dispatch, getState) => {
         return (async () => {
-            dispatch({ type: 'LOGIN_SUCCESS' });
             // Get updated xsrf token
             await dispatch(XsrfActionCreators.refresh());
             // Get updated menu; we may get extra options based on our role
             // dispatch(NavMenuActionCreators.fetchMenu());
     
-            // Navigate home
-            dispatch(push('/'));
+            dispatch({ type: 'LOGIN_SUCCESS' });
+            
+            // Navigate home -- we'll do that with a Redirect component render
+            // dispatch(push('/'));
         })();
     },
     startLogin: (loginInput: LoginInputModel) => (dispatch, getState) => {
