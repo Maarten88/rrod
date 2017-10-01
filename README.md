@@ -17,7 +17,7 @@ This project demonstrates many technologies in context:
 ## Web front-end
 - Webserver based on Aspnet Core 2.0, running as a standalone executable
 - Automatic request and use of Let's Encrypt TLS certificates on startup
-- AspNet JavascriptServices middleware driving webpack during development
+- AspNet JavascriptServices middleware driving webpack during development (requires node version 8+)
 - AspNet middleware to serve gzip-compressed static assets when possible
 - AspNet Identity using a custom Identity Store
 - Identity Server 4 based authentication
