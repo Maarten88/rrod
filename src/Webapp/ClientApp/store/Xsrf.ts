@@ -32,8 +32,8 @@ type KnownAction = SetXsrfTokenAction;
 
 export const actionCreators = {
 
-    refresh: (): AppThunkAction<KnownAction> => (dispatch, getState) => {
-        (async () => {
+    refresh: (): AppThunkAction<KnownAction> => (dispatch, getState): Promise<void> => {
+        return (async () => {
             let response = await fetch('/xsrfrefresh', {
                 method: 'GET',
                 credentials: 'include',

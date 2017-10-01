@@ -7,6 +7,7 @@ import { Grid, Col, Row, Button, Checkbox, Form, FormGroup, FormControl, InputGr
 import { ApplicationState } from '../store';
 import * as LoginStore from '../store/Login';
 import { LoginInputModel } from '../server/LoginInputModel';
+import { Redirect } from 'react-router-dom';
 
 type LoginProps = LoginStore.LoginState & typeof LoginStore.actionCreators & RouteComponentProps<{}>;
 
@@ -38,19 +39,15 @@ class Login extends React.Component<LoginProps, LoginInputModel> {
 
     public renderLoggedIn() {
         return <Grid>
-            <h1>Welcome, { this.props.userName }</h1>
+            <h1>Logged in as { this.props.userName }</h1>
 
-            <form action="~/account" method="post">
-                <button className="btn btn-lg btn-warning" type="submit">Query the resource controller</button>
-            </form>
-
-            <a className="btn btn-lg btn-danger" href="/signout">Sign out</a>
-        </Grid>
+           <Redirect to="/" />
+        </Grid>;
     }
 
     public renderAnonymous() {
         return <Grid className="omb_login">
-            <h3 className="omb_authTitle">Login of <Link to={'/Register'}>Registreer</Link></h3>
+            <h3 className="omb_authTitle">Login or <Link to={'/Register'}>Register as new user</Link></h3>
             <Row className="omb_socialButtons">
                 <Col xs={4} sm={2} smOffset={3} >
                     <Link to="#" className="btn btn-lg btn-block omb_btn-facebook">
@@ -75,7 +72,7 @@ class Login extends React.Component<LoginProps, LoginInputModel> {
             <Row className="omb_loginOr">
                 <Col xs={12} sm={6} smOffset={3} >
                     <hr className="omb_hrOr" />
-                    <span className="omb_spanOr">of</span>
+                    <span className="omb_spanOr">or</span>
 			    </Col>
             </Row>
 
@@ -85,7 +82,7 @@ class Login extends React.Component<LoginProps, LoginInputModel> {
                         <FormGroup validationState={this.getValidationState()}>
                             <InputGroup>
                                 <InputGroup.Addon><i className="fa fa-user" /></InputGroup.Addon>
-                                <FormControl name="email" type="text" onChange={this.handleChange} placeholder="Login Naam" />
+                                <FormControl name="email" type="text" onChange={this.handleChange} placeholder="Email adres" />
                             </InputGroup>
                             <FormControl.Feedback />
                         </FormGroup>
@@ -106,7 +103,7 @@ class Login extends React.Component<LoginProps, LoginInputModel> {
             <Row>
                 <Col xs={12} sm={3} smOffset={3}>
                     <FormGroup>
-                        <Checkbox>Onthou mij</Checkbox>
+                        <Checkbox>Keep me logged in</Checkbox>
                     </FormGroup>
     			</Col>
                 <Col xs={12} sm={3}>
