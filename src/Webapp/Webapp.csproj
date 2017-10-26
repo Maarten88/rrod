@@ -6,6 +6,7 @@
     <OutputType>Exe</OutputType>
     <UserSecretsId>rrod-secrets</UserSecretsId>
     <TypescriptCompileBlocked>true</TypescriptCompileBlocked>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   
   <ItemGroup>
@@ -14,7 +15,7 @@
   
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Orleans.Client" Version="2.0.0-preview3-*" />
+    <PackageReference Include="Microsoft.Orleans.Client" Version="2.0.0-*" />
     <PackageReference Include="IdentityServer4" Version="2.0.0-*" />
     <PackageReference Include="IdentityServer4.AspNetIdentity" Version="2.0.0-*" />
     <PackageReference Include="Certes" Version="1.1.0" />

@@ -29,9 +29,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.0.0" />
-
     <PackageReference Include="WindowsAzure.Storage" Version="8.4.0" />
-    <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0-preview3-*" />
+    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="2.0.0-*" />
+    <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0-*" />
+    <PackageReference Include="Microsoft.Orleans.OrleansCodeGenerator.Build" Version="2.0.0-*" />
     <PackageReference Include="Certes" Version="1.1.0" />
     <PackageReference Include="MimeKit" Version="1.18.1" />
     <PackageReference Include="MailKit" Version="1.18.1.1" />

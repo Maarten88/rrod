@@ -5,6 +5,7 @@
     <GenerateFullPaths>true</GenerateFullPaths>
     <OutputType>Exe</OutputType>
     <UserSecretsId>rrod-secrets</UserSecretsId>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,9 +18,8 @@
     <PackageReference Include="Certes" Version="1.1.0" />
     <PackageReference Include="MimeKit" Version="1.18.1" />
     <PackageReference Include="MailKit" Version="1.18.1.1" />
-    <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0-preview3-*" />
-    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.0-preview3-*" />
-    <PackageReference Include="Microsoft.Orleans.OrleansProviders" Version="2.0.0-preview3-*" />
+    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.0-*" />
+    <PackageReference Include="Microsoft.Orleans.OrleansProviders" Version="2.0.0-*" />
   </ItemGroup>
   
 </Project>

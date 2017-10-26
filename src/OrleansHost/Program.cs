@@ -6,6 +6,12 @@ using Orleans.Runtime.Host;
 using Grains;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
+using Orleans.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Grains.Redux;
+using GrainInterfaces;
 
 namespace OrleansHost
 {
@@ -13,7 +19,7 @@ namespace OrleansHost
     {
         static LoggerFactory loggerFactory = new LoggerFactory();
 
-        static int Main(string[] args)
+        static async Task Main(string[] args)
         {
             string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
             var builder = new ConfigurationBuilder()
@@ -41,40 +47,49 @@ namespace OrleansHost
             loggerFactory.AddDebug();
             var logger = loggerFactory.CreateLogger<Program>();
 
+            logger.LogWarning(string.Format($"Starting Orleans silo..."));
+
             ClusterConfiguration clusterConfig = ClusterConfiguration.LocalhostPrimarySilo();
             clusterConfig.Globals.DeploymentId = config["Id"];
             clusterConfig.Globals.DataConnectionString = config.GetConnectionString("DataConnectionString");
             clusterConfig.AddMemoryStorageProvider("Default");
             clusterConfig.AddMemoryStorageProvider("PubSubStore");
             clusterConfig.AddSimpleMessageStreamProvider("Default");
-            clusterConfig.Defaults.DefaultTraceLevel = Orleans.Runtime.Severity.Warning;
-            clusterConfig.Defaults.TraceFileName = "";
-            clusterConfig.UseStartupType<Startup>();
+            string siloName = config["Id"];
 
-            var siloHost = new SiloHost(config["Id"], clusterConfig);
+            var host = new SiloHostBuilder()
+                .UseConfiguration(clusterConfig)
+                .ConfigureSiloName(siloName)
+                .ConfigureServices(services =>
+                {
+                    services.AddOptions();
+                    services.TryAdd(ServiceDescriptor.Singleton<ILoggerFactory, LoggerFactory>());
+                    services.TryAdd(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(Logger<>)));
+                    services.Configure<ConnectionStrings>(config.GetSection("ConnectionStrings"));
+                    string reduxConnectionString = config.GetConnectionString("ReduxConnectionString");
+                    services.AddSingleton(new ReduxTableStorage<CertState>(reduxConnectionString));
+                    services.AddSingleton(new ReduxTableStorage<UserState>(reduxConnectionString));
+                    services.AddSingleton(new ReduxTableStorage<CounterState>(reduxConnectionString));
+                })
+                .AddApplicationPart(typeof(CounterGrain).Assembly)
+                .AddApplicationPartsFromReferences(typeof(CounterGrain).Assembly)
+                .Build();
 
             try
             {
-                siloHost.InitializeOrleansSilo();
-                bool ok = siloHost.StartOrleansSilo(catchExceptions: false);
+                await host.StartAsync();
 
-                if (!ok)
-                {
-                    logger.LogError(string.Format($"Failed to start Orleans silo '{siloHost.Name}' as a {siloHost.Type} node."));
-                    return 1;
-                }
+                logger.LogInformation(string.Format($"Successfully started Orleans silo {siloName}"));
+                Console.WriteLine($"Silo {siloName} is running. Press [enter] to stop...");
+                Console.ReadLine();
+
+                await host.StopAsync();
+                logger.LogWarning(string.Format($"Orleans silo shutdown."));
             }
-            catch (Exception exc)
+            catch (Exception e)
             {
-                siloHost.ReportStartupError(exc);
-                return 2;
+                logger.LogCritical(e, "Silo stopping fatally with exception: " + e.Message);
             }
-
-            Console.WriteLine("OrleansHost is running. Press [Ctrl]-C to stop...");
-            siloHost.WaitForOrleansSiloShutdown();
-            // logger.LogInformation(string.Format($"Orleans silo '{siloHost.Name}' shutdown. Press [Enter]"));
-            // Console.ReadLine();
-            return 0;
         }
     }
 }

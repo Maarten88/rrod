@@ -32,9 +32,9 @@ namespace Grains
     {
         readonly ILogger<CertGrain> logger;
 
-        public CertGrain(ReduxTableStorage<CertState> storage, ILogger<CertGrain> logger) : base(CertState.Reducer, storage)
+        public CertGrain(ReduxTableStorage<CertState> storage, ILoggerFactory loggerFactory) : base(CertState.Reducer, storage, loggerFactory)
         {
-            this.logger = logger;
+            this.logger = loggerFactory.CreateLogger<CertGrain>();
         }
 
         public Task<Immutable<byte[]>> GetCertificate()

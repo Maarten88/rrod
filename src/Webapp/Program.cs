@@ -36,8 +36,7 @@ namespace Webapp
 {
     public class Program
     {
-        public static IConfigurationRoot Configuration;
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
             bool isDevelopment = "Development".Equals(environment, StringComparison.OrdinalIgnoreCase);
@@ -53,36 +52,54 @@ namespace Webapp
                 builder.AddUserSecrets<Program>();
             }
 
-            Configuration = builder.Build();
+            var config = builder.Build();
+
+            var loggerFactory = new LoggerFactory()
+                .AddConsole(config.GetSection("Logging"))
+                .AddDebug();
+            var logger = loggerFactory.CreateLogger<Program>();
+            logger.LogWarning($"Starting Webapp in {environment} environment...");
+
 
             // Initialize the connection to the OrleansHost process
             var orleansClientConfig = ClientConfiguration.LocalhostSilo();
-            orleansClientConfig.DeploymentId = Configuration["DeploymentId"];
-            orleansClientConfig.DataConnectionString = Configuration.GetConnectionString("DataConnectionString");
+            orleansClientConfig.DeploymentId = config["DeploymentId"];
+            orleansClientConfig.DataConnectionString = config.GetConnectionString("DataConnectionString");
             orleansClientConfig.AddSimpleMessageStreamProvider("Default");
-            orleansClientConfig.DefaultTraceLevel = Severity.Warning;
-            orleansClientConfig.TraceFileName = "";
 
+
+            int attempt = 0;
             IClusterClient orleansClient;
-            do
+            while (true)
             {
-                orleansClient = new ClientBuilder().UseConfiguration(orleansClientConfig).Build();
+                orleansClient = new ClientBuilder()
+                    .UseConfiguration(orleansClientConfig)
+                    //.AddApplicationPartsFromAppDomain()
+                    .AddApplicationPartsFromReferences(typeof(GrainInterfaces.ICounterGrain).Assembly)
+                    .Build();
                 try
                 {
-                    orleansClient.Connect().Wait();
-                    // GrainClient.Initialize(orleansClientConfig);
+                    await orleansClient.Connect().ConfigureAwait(false);
+                    logger.LogInformation("Client successfully connected to silo host");
+                    break;
                 }
                 catch (Exception ex) when (ex is OrleansException || ex is SiloUnavailableException || (ex is AggregateException && ex.InnerException is SiloUnavailableException))
                 {
                     orleansClient.Dispose();
-                    // Wait for the Host to start
-                    Thread.Sleep(3000);
+
+                    attempt++;
+                    logger.LogWarning($"Attempt {attempt} of 5 failed to initialize the Orleans client.");
+                    if (attempt > 5)
+                    {
+                        throw;
+                    }
+                    // Wait 4 seconds before retrying
+                    await Task.Delay(4000);
                 }
             }
-            while (!orleansClient.IsInitialized);
 
             // we use a single settings file, that also contains the hosting settings
-            var urls = (Configuration[WebHostDefaults.ServerUrlsKey] ?? "http://localhost:5000")
+            var urls = (config[WebHostDefaults.ServerUrlsKey] ?? "http://localhost:5000")
                 .Split(new[] { ',', ';' })
                 .Select(url => url.Trim())
                 .ToArray();
@@ -148,7 +165,7 @@ namespace Webapp
                 };
 
                 acmeHost = new WebHostBuilder()
-                    .UseConfiguration(Configuration)
+                    .UseConfiguration(config)
                     .ConfigureLogging((context, factory) =>
                     {
                         factory.AddConfiguration(context.Configuration.GetSection("Logging"));
@@ -158,7 +175,8 @@ namespace Webapp
                     .UseEnvironment(environment)
                     .ConfigureServices(services => {
                         services.AddSingleton<IClusterClient>(orleansClient);
-                        services.Configure<AcmeSettings>(Configuration.GetSection(nameof(AcmeSettings)));
+                        services.AddSingleton<ILoggerFactory>(loggerFactory);
+                        services.Configure<AcmeSettings>(config.GetSection(nameof(AcmeSettings)));
 
                         // Register a certitificate manager, supplying methods to store and retreive certificates and acme challenge responses
                         services.AddAcmeCertificateManager(acmeOptions);
@@ -178,23 +196,16 @@ namespace Webapp
                 }
                 catch (Exception e)
                 {
-                    var logger = acmeHost.Services.GetService<ILogger<Program>>();
-                    // var logger = loggerFactory.CreateLogger<Program>();
                     logger.LogError("Error: can't start web listener for acme certificate renewal, probably the web address is in use by another process. Exception message is: " + e.Message);
                     logger.LogError("Ignoring noncritical error (stop W3SVC or Skype to fix this), continuing...");
                 }
             }
 
             var host = new WebHostBuilder()
-                .UseConfiguration(Configuration)
-                .ConfigureLogging((context, factory) =>
-                {
-                    factory.AddConfiguration(context.Configuration.GetSection("Logging"));
-                    factory.AddConsole();
-                    factory.AddDebug();
-                })
+                .UseConfiguration(config)
                 .ConfigureServices(services => {
                     services.AddSingleton<IClusterClient>(orleansClient);
+                    services.AddSingleton<ILoggerFactory>(loggerFactory);
                     if (secureUrls.Any())
                         services.AddAcmeCertificateManager(acmeOptions);
                 })

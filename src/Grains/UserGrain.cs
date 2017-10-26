@@ -6,6 +6,7 @@ using Grains.Redux;
 using System.Reactive.Linq;
 using Orleans.Streams;
 using Grains.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace Grains
 {
@@ -15,7 +16,7 @@ namespace Grains
         IDisposable storeSubscription;
         StreamSubscriptionHandle<IAction> actionStreamSubscription;
 
-        public UserGrain(ReduxTableStorage<UserState> storage) : base(UserState.Reducer, storage)
+        public UserGrain(ReduxTableStorage<UserState> storage, ILoggerFactory loggerFactory) : base(UserState.Reducer, storage, loggerFactory)
         {
         }
 

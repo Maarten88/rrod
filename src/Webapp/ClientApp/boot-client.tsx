@@ -11,14 +11,6 @@ import { actionCreators as xsrfActionCreatores } from './store/Xsrf';
 import * as RoutesModule from './routes';
 let routes = RoutesModule.routes;
 
-// Temporary declaration while @types/react do not have the new React 16 hydrate function
-declare module 'react-dom' {
-    function hydrate<P>(
-        element: React.ReactElement<P>,
-        container: Element | null,
-        callback?: (component?: React.Component<P, React.ComponentState> | Element) => any
-    ): React.Component<P, React.ComponentState> | Element | void;
-}
 
 // import { actionCreators as sessionActionCreators } from './store/Session';
 // import { actionCreators as connectionActionCreators } from './store/SignalRConnection';

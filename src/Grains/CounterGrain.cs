@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Grains.Redux;
 using System.Reactive.Linq;
 using Orleans.Streams;
+using Microsoft.Extensions.Logging;
 
 namespace Grains
 {
@@ -15,6 +16,13 @@ namespace Grains
         StreamSubscriptionHandle<IAction> actionStreamSubscription;
         IDisposable storeSubscription;
         IAsyncStream<IAction> actionsToClientStream;
+        readonly ILogger<CounterGrain> logger;
+
+        public CounterGrain(ReduxTableStorage<CounterState> storage, ILoggerFactory loggerFactory) : base(CounterState.Reducer, storage, loggerFactory)
+        {
+            this.logger = loggerFactory.CreateLogger<CounterGrain>();
+        }
+
 
         public override async Task OnActivateAsync()
         {
@@ -38,7 +46,7 @@ namespace Grains
                         await this.actionsToClientStream.OnNextAsync(new SyncCounterStateAction { CounterState = state });
                 },
                 (Exception e) => {
-                    GetLogger().TrackException(e);
+                    this.logger.LogError(e, "CounterGrain: Exception in store subscription stream");
                 });
 
         }
@@ -51,10 +59,6 @@ namespace Grains
             await this.actionStreamSubscription.UnsubscribeAsync();
             this.actionStreamSubscription = null;
             await base.OnDeactivateAsync();
-        }
-
-        public CounterGrain(ReduxTableStorage<CounterState> storage) : base(CounterState.Reducer, storage)
-        {
         }
 
         public async Task IncrementCounter()
