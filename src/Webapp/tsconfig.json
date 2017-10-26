@@ -7,7 +7,7 @@
         "target": "es2017",
         "jsx": "react",
         "experimentalDecorators": true,
-        "sourceMap": true,
+        "sourceMap": false,
         // "skipDefaultLibCheck": true,
         "lib": [ "es2017", "dom" ],
         "allowJs": false,
@@ -21,6 +21,7 @@
         ],
         "paths": {
             "react": ["node_modules/@types/react"],
+            "history": ["node_modules/@types/history"],
             "*": [ 
                 "./ClientApp/types/*", 
                 "*" 

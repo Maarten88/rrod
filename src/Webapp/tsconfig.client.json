@@ -1,44 +1,8 @@
 {
-  "include": [
-  ],
+  "extends": "./tsconfig",
   "compilerOptions": {
-    "baseUrl": "./",
-    "module": "es2015",
-    "moduleResolution": "node",
+    "module": "esnext",
     "target": "es5",
-    "jsx": "react",
-    "experimentalDecorators": true,
-    "sourceMap": true,
-    "skipDefaultLibCheck": true,
-    "importHelpers": true,
-    "noEmitHelpers": true,
-    "allowSyntheticDefaultImports": true, // for classNames
-    // "skipLibCheck": true, // temporary workaround for @types/lodash: 'All declarations of 'WeakMap' must have identical type parameters.'
-    "lib": [
-      "es2017", 
-      "dom"
-    ],
-    "allowJs": false,
-    "types": [
-      "webpack-env",
-      "EventSource"
-    ],
-    "typeRoots": [
-      "ClientApp/types",
-      "node_modules/@types",
-      "node_modules"
-    ],
-    "paths": {
-      "react": ["node_modules/@types/react"],
-      "*": [
-        "./ClientApp/types/*",
-        "*"
-      ]
-    }
-  },
-  "exclude": [
-    "bin",
-    "obj",
-    "node_modules"
-  ]
+    "sourceMap": true
+  }
 }
