@@ -43,7 +43,7 @@ class Contact extends React.Component<ContactProps, ContactStore.ContactForm> {
     public render() {
         return <Grid>
             <h1>Contact us</h1>
-            <Row className="row">
+            <Row>
                 <Col md={6}>
                     <Well bsSize="sm">
                         <Form horizontal onSubmit={this.submit}>

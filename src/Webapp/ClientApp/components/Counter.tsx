@@ -3,10 +3,77 @@ import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { ApplicationState }  from '../store';
 import * as CounterStore from '../store/Counter';
+import Transition from "react-transition-group/Transition";
+import * as Animated from 'react-dom-animated';
 
 type CounterProps = CounterStore.CounterState & typeof CounterStore.actionCreators;
+interface CounterState {
+    animate: any;
+}
 
-class Counter extends React.Component<CounterProps> {
+interface CountProps {
+    count: number;
+}
+interface CountState {
+    count: number;
+    animate: any;
+}
+class Count extends React.Component<CountProps, CountState> {
+
+    listener: string;
+    constructor(props: CountProps) {
+        super(props);
+        this.state = {
+            count: props.count,
+            animate: new Animated.Value(1)
+        };
+    }
+
+    componentDidMount() {
+        this.listener = this.state.animate.addListener((state) => {
+            if (state.value > 0.4) {
+                this.setState({count: this.props.count});
+            }
+        });
+    }
+    componentWillUnmount() {
+        if (this.listener) {
+            this.state.animate.removeListener(this.listener);
+        }
+    }
+    componentWillReceiveProps(nextProps: CountProps) {
+        // console.log("componentWillReceiveProps", nextProps, this.props);
+        if (nextProps.count !== this.props.count) {
+            this.state.animate.setValue(0);
+            Animated.spring(this.state.animate, { toValue: 1 }).start();
+        }
+    }
+
+    render() {
+        const style = {
+            transformStyle: "preserve-3d",
+            // perspective: "100%",
+            // opacity: this.state.animate,
+            transform: Animated.template`
+                rotateX(${this.state.animate.interpolate({
+                inputRange: [0, 1],
+                outputRange: ["90deg", "0deg"]
+            })})
+            `
+        };        
+        return (
+            <Transition timeout={5000}>
+                <Animated.div style={style}>
+                    <div className="count">
+                            { this.state.count }
+                    </div>
+                </Animated.div>
+            </Transition>        
+        );
+    }
+}
+
+class Counter extends React.Component<CounterProps, CounterState> {
     componentWillMount() {
         // fetch current data from server
         this.props.request();
@@ -21,8 +88,16 @@ class Counter extends React.Component<CounterProps> {
                 Refresh the page to see that the value is also rendered serverside.
             </p>
 
-            <p>Current count: <strong>{ this.props.count }</strong></p>
-
+            <div className="row">
+                <div className="col-xs-12">
+                    <div className="counter">
+                        <div className="count-header">Current count</div>
+                        <Count count={this.props.count} />
+                        </div>
+                    </div>
+                </div>
+            <br />
+            
             <button className="btn btn-default" onClick={() => { this.props.increment() }}>Increment</button>
             <button className="btn btn-default" onClick={() => { this.props.decrement() }}>Decrement</button>
             <button className="btn btn-default" disabled={this.props.started} onClick={() => { this.props.start() }}>Start</button>

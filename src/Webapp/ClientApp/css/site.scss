@@ -16,6 +16,27 @@ body {
     height: 100%;
 }
 
+.fade-appear,
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-appear-active,
+.fade-enter-active {
+  transition: opacity .3s linear;
+  opacity: 1;
+}
+
+.fade-exit {
+  transition: opacity .2s linear;
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+}
+  
+
 .navbar-brand {
     display: flex;
     align-items: center;
@@ -71,6 +92,29 @@ body {
 footer {
     text-align: center;
 }
+
+.count {
+    text-align: center;
+    font-size: 150px;
+    font-weight: 500;
+    line-height: 1.1;
+    margin-top: -15px;
+    padding: 0 15px;
+}
+
+.count-header {
+    font-size: 20px;
+    text-align: center;
+    padding-top: 5px;
+}
+
+.counter {
+    display:inline-block;
+    min-width: 300px;
+    border: 2px solid gray;
+    background-color: lightgray;
+}
+
 /* Socials links */
 #share {
     margin: 50px 0 0;
