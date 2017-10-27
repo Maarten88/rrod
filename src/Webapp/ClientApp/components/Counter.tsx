@@ -31,6 +31,8 @@ class Count extends React.Component<CountProps, CountState> {
 
     componentDidMount() {
         this.listener = this.state.animate.addListener((state) => {
+            // we wait until the animation is almost halfway 
+            // before letting the new value show
             if (state.value > 0.4) {
                 this.setState({count: this.props.count});
             }
@@ -45,7 +47,13 @@ class Count extends React.Component<CountProps, CountState> {
         // console.log("componentWillReceiveProps", nextProps, this.props);
         if (nextProps.count !== this.props.count) {
             this.state.animate.setValue(0);
-            Animated.spring(this.state.animate, { toValue: 1 }).start();
+            Animated.spring(this.state.animate, { toValue: 1 }).start(() => {
+                // This is to make really sure the displayed value is changed;
+                // this state update is also done in the listener, which should 
+                // make this change before we are here at the end of the animation
+                if (this.state.count !== nextProps.count)
+                    this.setState({count: nextProps.count});
+            });
         }
     }
 

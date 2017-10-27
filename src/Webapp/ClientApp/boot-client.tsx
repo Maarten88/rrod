@@ -8,14 +8,9 @@ import { createBrowserHistory } from 'history';
 import configureStore from './configureStore';
 import { ApplicationState } from './store';
 import { actionCreators as xsrfActionCreatores } from './store/Xsrf';
+import * as SignalRModule from './store/SignalRConnection';
 import * as RoutesModule from './routes';
 let routes = RoutesModule.routes;
-
-
-// import { actionCreators as sessionActionCreators } from './store/Session';
-// import { actionCreators as connectionActionCreators } from './store/SignalRConnection';
-import * as SignalRModule from './store/SignalRConnection';
-let actionCreators = SignalRModule.actionCreators;
 
 // Get the application-wide store instance, prepopulating with state from the server where available.
 // Create browser history to use in the Redux store

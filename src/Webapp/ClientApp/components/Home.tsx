@@ -7,7 +7,8 @@ import Footer from './Footer';
 
 export default class Home extends React.Component<{}> {
     public render() {
-          return <div className="container-fluid">
+        return <div className="container-fluid">
+            <Scroll.Element name="top" />
             <Fullscreen>
                 <div className="row" id="hero">
                     <div className="container">

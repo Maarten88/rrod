@@ -1,5 +1,11 @@
 {
     "version": "0.2.0",
+    "compounds": [
+        {
+            "name": "Launch & Debug All",
+            "configurations": [ "Launch OrleansHost", "Launch Webapp", "Open in Chrome" ]
+        }
+    ],
     "configurations": [
         {
             "type": "node",
@@ -29,6 +35,13 @@
             "console": "internalConsole",
             "stopAtEntry": false,
             "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Open in Chrome",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5000/",
+            "webRoot": "${workspaceRoot}/src/Webapp"
         },
         {
             "name": ".NET Core Attach",
