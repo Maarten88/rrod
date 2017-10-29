@@ -16,12 +16,12 @@ export default class Home extends React.Component<{}> {
                             <ScrollEffect animate="bounceIn">
                                 <h1 className="home-intro-text">Demo!</h1>
                                 <h1 className="home-intro-text">...React, Redux, Orleans and Dotnet</h1>
-                                    <h3 className="home-intro-text">Introducing the <Scroll.Link to="demo" href="#" smooth={true} duration={700} offset={-50}>RROD</Scroll.Link> stack</h3>
+                                    <h3 className="home-intro-text">Introducing the <Scroll.Link to="demo" href="#" smooth={true} duration={700} offset={0}>RROD</Scroll.Link> stack</h3>
                             </ScrollEffect>
                         </div>
 
                         <div className="down-link">
-                            <Scroll.Link to="demo" href="#" className="icon-link" smooth={true} duration={700} offset={-50} ><i className="fa fa-arrow-circle-down custom" ></i></Scroll.Link>
+                            <Scroll.Link to="demo" href="#" className="icon-link" smooth={true} duration={700} offset={0} ><i className="fa fa-arrow-circle-down custom" ></i></Scroll.Link>
                         </div>
                     </div>
                 </div>
@@ -32,7 +32,7 @@ export default class Home extends React.Component<{}> {
                     <div className="container">
                         <h1>Page 2</h1>
                         <div className="down-link">
-                            <Scroll.Link to="footer" href="#" className="icon-link" smooth={true} duration={700} offset={-50} ><i className="fa fa-arrow-circle-down custom" ></i></Scroll.Link>
+                            <Scroll.Link to="footer" href="#" className="icon-link" smooth={true} duration={700} offset={0} ><i className="fa fa-arrow-circle-down custom" ></i></Scroll.Link>
                         </div>
                     </div>
                 </div>

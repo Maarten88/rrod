@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import { RouteComponentProps, Redirect } from 'react-router-dom';
-import { autobind } from 'core-decorators';
 import { Grid, Row, Col, Well, Panel, PanelGroup, Button, FormGroup, Form, ControlLabel, FormControl, HelpBlock } from 'react-bootstrap';
 import { ApplicationState } from '../store/index';
 import * as RegisterStore from '../store/Register';
@@ -29,17 +28,14 @@ class Register extends React.Component<RegisterProps, RegisterViewModel> {
             this.setState(nextProps.form)
     }
 
-    @autobind
-    handleChange(e: any) {
+    handleChange = (e: any) => {
         this.setState({ ...this.state, [e.target.name]: e.target.value });
     }
 
-    @autobind
-    submit(event: React.FormEvent<Form>) {
+    submit = (event: React.FormEvent<Form>) => {
         this.props.submitRegistrationForm(this.state);
         event.preventDefault();
     }
-
 
     render() {
         if (this.props.result && this.props.result.success) {

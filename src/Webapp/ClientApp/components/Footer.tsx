@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { autobind } from 'core-decorators';
 import { Button, FormGroup, Form, ControlLabel, FormControl, HelpBlock } from 'react-bootstrap';
 import { ApplicationState } from '../store';
 import * as FooterState from '../store/Footer';
@@ -18,25 +17,21 @@ class Footer extends React.Component<FooterProps, FooterState.EmailForm> {
         this.handleChange = this.handleChange.bind(this);
     }
 
-    @autobind
-    getValidationState(): "success" | "warning" | "error" {
+    getValidationState = (): "success" | "warning" | "error" => {
         var emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
         return emailRegex.test(this.state.email) ? "success" : null;
     }
 
-    @autobind
-    handleChange(e: any) {
+    handleChange = (e: any) => {
         this.setState({ email: e.target.value });
     }
 
-    @autobind
-    submitEmail(event : React.FormEvent<Form>) {
+    submitEmail = (event : React.FormEvent<Form>) => {
         this.props.submitEmail(this.state);
         event.preventDefault();
     }
 
-    @autobind
-    submitDisabled() {
+    submitDisabled = () => {
         return this.props.isSubmitting || this.getValidationState() !== "success";
     }
 

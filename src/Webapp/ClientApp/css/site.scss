@@ -16,6 +16,12 @@ body {
     height: 100%;
 }
 
+.animated-page-wrapper {
+    position: absolute;
+    top: 50px;
+    width: 100%;
+}
+
 .fade-appear,
 .fade-enter {
   opacity: 0;

@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig",
+  "extends": "./tsconfig.server",
   "compilerOptions": {
     "module": "esnext",
     "target": "es5",

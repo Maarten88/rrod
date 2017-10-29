@@ -1,7 +1,6 @@
 ﻿import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as classNames from 'classnames';
-import { autobind } from 'core-decorators';
 import debounce from 'lodash-es/debounce';
 
 interface Cancelable {
@@ -98,7 +97,6 @@ export default class ScrollEffect extends React.Component<ScrollEffectProps, Scr
         }, this.props.duration * 1000 * number);
     }
 
-    @autobind
     handleScroll(e) {
         if (!this.state.animated) {
             let element = ReactDOM.findDOMNode(this);

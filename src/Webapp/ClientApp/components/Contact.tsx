@@ -1,10 +1,8 @@
 ﻿import * as React from 'react';
 import { connect } from 'react-redux';
-import { autobind } from 'core-decorators';
 import { Grid, Row, Col, Well, Panel, PanelGroup, Button, FormGroup, Form, ControlLabel, FormControl, HelpBlock } from 'react-bootstrap';
 import { ApplicationState } from '../store';
 import * as ContactStore from '../store/Contact';
-
 
 type ContactProps = ContactStore.ContactState & typeof ContactStore.actionCreators;
 
@@ -29,13 +27,11 @@ class Contact extends React.Component<ContactProps, ContactStore.ContactForm> {
             this.setState(nextProps.form)
     }
 
-    @autobind
-    handleChange(e: any) {
+    handleChange = (e: any) => {
         this.setState({ [e.target.name]: e.target.value });
     }
 
-    @autobind
-    submit(event: React.FormEvent<Form>) {
+    submit = (event: React.FormEvent<Form>) => {
         this.props.submitContactForm(this.state);
         event.preventDefault();
     }

@@ -1,0 +1,36 @@
+{
+    "include": [],
+    "compilerOptions": {
+        "baseUrl": "./",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "target": "es2017",
+        "jsx": "react",
+        "sourceMap": false,
+        // "skipDefaultLibCheck": true,
+        "lib": [ "es2017", "dom" ],
+        "allowJs": false,
+        "types": [ 
+            "webpack-env",
+            "EventSource"
+        ],
+        "typeRoots": [
+            "ClientApp/types",
+            "node_modules/@types"
+        ],
+        "paths": {
+            "react": ["node_modules/@types/react"],
+            "history": ["node_modules/@types/history"],
+            "react-router": ["ClientApp/types/react-router"],
+            "*": [ 
+                "./ClientApp/types/*", 
+                "*" 
+            ]
+        }
+    },
+    "exclude": [
+      "bin",
+      "obj",
+      "node_modules"
+    ]
+  }

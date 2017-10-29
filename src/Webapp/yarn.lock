@@ -69,9 +69,9 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-redux@5.0.11":
-  version "5.0.11"
-  resolved "https://registry.yarnpkg.com/@types/react-redux/-/react-redux-5.0.11.tgz#287ba4d9352af95595afd65348c9b04768268233"
+"@types/react-redux@5.0.12":
+  version "5.0.12"
+  resolved "https://registry.yarnpkg.com/@types/react-redux/-/react-redux-5.0.12.tgz#c066812eb970009b373372f439d08265ed2a6f8e"
   dependencies:
     "@types/react" "*"
     redux "^3.6.0"
@@ -92,8 +92,8 @@
     "@types/react-router" "*"
 
 "@types/react-router-dom@^4.0.8":
-  version "4.0.8"
-  resolved "https://registry.yarnpkg.com/@types/react-router-dom/-/react-router-dom-4.0.8.tgz#a9731bf35d053cdd27053baacc19e505d74514f3"
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/@types/react-router-dom/-/react-router-dom-4.2.0.tgz#0f2f11d1553bd5aafbd8f613317e8dc9291d7a34"
   dependencies:
     "@types/history" "*"
     "@types/react" "*"
@@ -785,9 +785,9 @@ caniuse-lite@^1.0.0, caniuse-lite@^1.0.30000718, caniuse-lite@^1.0.30000726:
   version "1.0.30000733"
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30000733.tgz#ebfc48254117cc0c66197a4536cb4397a6cfbccd"
 
-caniuse-lite@^1.0.30000751:
-  version "1.0.30000751"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30000751.tgz#298ad34182ca4359757b4a93afc681b7b917e358"
+caniuse-lite@^1.0.30000755:
+  version "1.0.30000755"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30000755.tgz#9ce5f6e06bd75ec8209abe8853c3beef02248d65"
 
 caseless@~0.12.0:
   version "0.12.0"
@@ -1066,10 +1066,6 @@ copy-concurrently@^1.0.0:
 copy-descriptor@^0.1.0:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/copy-descriptor/-/copy-descriptor-0.1.1.tgz#676f6eb3c39997c2ee1ac3a924fd6124748f578d"
-
-core-decorators@0.20.0:
-  version "0.20.0"
-  resolved "https://registry.yarnpkg.com/core-decorators/-/core-decorators-0.20.0.tgz#605896624053af8c28efbe735c25a301a61c65c5"
 
 core-js@^1.0.0:
   version "1.2.7"

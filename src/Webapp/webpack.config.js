@@ -1,4 +1,3 @@
-// const isDevBuild = process.argv.indexOf('--env.prod') < 0;
 const path = require('path');
 const webpack = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
@@ -22,10 +21,6 @@ module.exports = (env) => {
         SERVER: true,
         CLIENT: false
     };
-
-    // pass as JSON object into query string ?json=...
-    // const clientIfdefQuery = q.encode({ json: JSON.stringify(clientIfdefOptions) });
-    // const serverIfdefQuery = q.encode({ json: JSON.stringify(serverIfdefOptions) });
 
     // Configuration in common to both client-side and server-side bundles
     const sharedConfig = () => ({
@@ -149,7 +144,6 @@ module.exports = (env) => {
 
     // Configuration for server-side (prerendering) bundle suitable for running in Node
     var serverBundleConfig = merge(sharedConfig(), {
-        // resolve: { mainFields: ['main'] },
         entry: {
             'main-server': './ClientApp/boot-server.tsx'
         },
@@ -162,7 +156,7 @@ module.exports = (env) => {
                         {
                             loader: 'awesome-typescript-loader',
                             options: {
-                                configFileName: 'tsconfig.json',
+                                configFileName: 'tsconfig.server.json',
                                 silent: true,
                                 useCache: false,
                                 instance: 'at-server'

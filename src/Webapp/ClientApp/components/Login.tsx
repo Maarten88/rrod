@@ -2,7 +2,6 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Link, RouteComponentProps } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { autobind } from 'core-decorators';
 import { Grid, Col, Row, Button, Checkbox, Form, FormGroup, FormControl, InputGroup, InputGroupAddon } from 'react-bootstrap';
 import { ApplicationState } from '../store';
 import * as LoginStore from '../store/Login';
@@ -21,19 +20,16 @@ class Login extends React.Component<LoginProps, LoginInputModel> {
         };
     }
 
-    @autobind
-    handleChange(e: any) {
+    handleChange = (e: any) => {
         this.setState({ ...this.state, [e.target.name]: e.target.value });
     }
 
-    @autobind
-    private login(event: React.FormEvent<Form>) {
+    login = (event: React.FormEvent<Form>) => {
         this.props.startLogin(this.state);
         event.preventDefault();
     }
 
-    @autobind
-    getValidationState(): "success" | "warning" | "error" {
+    getValidationState = (): "success" | "warning" | "error" => {
         return null;
     }
 
