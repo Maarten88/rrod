@@ -1,36 +1,19 @@
-using System;
-using System.IO;
-using System.Threading;
+using GrainInterfaces;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Orleans;
+using Orleans.Concurrency;
 using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
-using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Builder;
-using Webapp.Services;
-using GrainInterfaces;
-using Orleans.Concurrency;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using Microsoft.AspNetCore.ResponseCompression;
-using System.IO.Compression;
-using Microsoft.AspNetCore.SpaServices.Webpack;
-using Webapp.Controllers;
-using Webapp.Identity;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.AspNetCore.Identity;
-using IdentityModel;
-using System.IdentityModel.Tokens;
-using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Security.Claims;
 using System.Net;
+using System.Threading.Tasks;
+using Webapp.Services;
 
 namespace Webapp
 {
@@ -38,8 +21,8 @@ namespace Webapp
     {
         public static async Task Main(string[] args)
         {
-            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
-            bool isDevelopment = "Development".Equals(environment, StringComparison.OrdinalIgnoreCase);
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+            var isDevelopment = "Development".Equals(environment, StringComparison.OrdinalIgnoreCase);
 
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -60,22 +43,20 @@ namespace Webapp
             var logger = loggerFactory.CreateLogger<Program>();
             logger.LogWarning($"Starting Webapp in {environment} environment...");
 
-
             // Initialize the connection to the OrleansHost process
             var orleansClientConfig = ClientConfiguration.LocalhostSilo();
-            orleansClientConfig.DeploymentId = config["DeploymentId"];
+            orleansClientConfig.ClusterId = config["DeploymentId"];
             orleansClientConfig.DataConnectionString = config.GetConnectionString("DataConnectionString");
             orleansClientConfig.AddSimpleMessageStreamProvider("Default");
 
-
-            int attempt = 0;
+            var attempt = 0;
             IClusterClient orleansClient;
             while (true)
             {
                 orleansClient = new ClientBuilder()
                     .UseConfiguration(orleansClientConfig)
                     //.AddApplicationPartsFromAppDomain()
-                    .AddApplicationPartsFromReferences(typeof(GrainInterfaces.ICounterGrain).Assembly)
+                    .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ICounterGrain).Assembly).WithReferences())
                     .Build();
                 try
                 {
@@ -110,7 +91,6 @@ namespace Webapp
                 .Select(url => new Uri(url))
                 .Where(uri => uri.Scheme == "https")
                 .ToArray();
-
 
             // It is possible to request Acme certificates with subject alternative names, but this is not yet implemented.
             // Usually we'll need only a single address, so I'm taking the first one
@@ -173,7 +153,8 @@ namespace Webapp
                         factory.AddDebug();
                     })
                     .UseEnvironment(environment)
-                    .ConfigureServices(services => {
+                    .ConfigureServices(services =>
+                    {
                         services.AddSingleton<IClusterClient>(orleansClient);
                         services.AddSingleton<ILoggerFactory>(loggerFactory);
                         services.Configure<AcmeSettings>(config.GetSection(nameof(AcmeSettings)));
@@ -184,12 +165,12 @@ namespace Webapp
                     .UseUrls("http://*:80/.well-known/acme-challenge/")
                     .UseKestrel()
                     // .UseLoggerFactory(loggerFactory)
-                    .Configure(app => {
+                    .Configure(app =>
+                    {
                         app.UseAcmeResponse();
                     })
                     .Build();
 
-                
                 try
                 {
                     acmeHost.Start();
@@ -203,7 +184,8 @@ namespace Webapp
 
             var host = new WebHostBuilder()
                 .UseConfiguration(config)
-                .ConfigureServices(services => {
+                .ConfigureServices(services =>
+                {
                     services.AddSingleton<IClusterClient>(orleansClient);
                     services.AddSingleton<ILoggerFactory>(loggerFactory);
                     if (secureUrls.Any())
