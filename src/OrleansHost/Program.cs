@@ -1,27 +1,27 @@
-﻿using System;
-using Orleans.Runtime.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using Orleans.Runtime.Host;
+﻿using GrainInterfaces;
 using Grains;
+using Grains.Redux;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Orleans;
+using Orleans.Hosting;
+using Orleans.Runtime.Configuration;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Orleans.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Grains.Redux;
-using GrainInterfaces;
 
 namespace OrleansHost
 {
-    class Program
+    internal class Program
     {
-        static LoggerFactory loggerFactory = new LoggerFactory();
+        private static readonly LoggerFactory LoggerFactory = new LoggerFactory();
 
-        static async Task Main(string[] args)
+        private static async Task Main(string[] args)
         {
-            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
             var builder = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
                     .AddInMemoryCollection(new Dictionary<string, string> // add default settings, that will be overridden by commandline
@@ -31,7 +31,7 @@ namespace OrleansHost
                             {"DeploymentId", "testdeploymentid"},
                         })
                     .AddCommandLine(args)
-                    .AddJsonFile($"appconfig.json", optional: true)
+                    .AddJsonFile("appconfig.json", optional: true)
                     .AddJsonFile($"appconfig.{environment}.json", optional: true)
                     .AddEnvironmentVariables("ASPNETCORE_");  // The CloudService will pass settings (such as) the connectionstring through environment variables
 
@@ -43,19 +43,19 @@ namespace OrleansHost
 
             var config = builder.Build();
 
-            loggerFactory.AddConsole(config.GetSection("Logging"));
-            loggerFactory.AddDebug();
-            var logger = loggerFactory.CreateLogger<Program>();
+            LoggerFactory.AddConsole(config.GetSection("Logging"));
+            LoggerFactory.AddDebug();
+            var logger = LoggerFactory.CreateLogger<Program>();
 
-            logger.LogWarning(string.Format($"Starting Orleans silo..."));
+            logger.LogWarning("Starting Orleans silo...");
 
-            ClusterConfiguration clusterConfig = ClusterConfiguration.LocalhostPrimarySilo();
-            clusterConfig.Globals.DeploymentId = config["Id"];
+            var clusterConfig = ClusterConfiguration.LocalhostPrimarySilo();
+            clusterConfig.Globals.ClusterId = config["Id"];
             clusterConfig.Globals.DataConnectionString = config.GetConnectionString("DataConnectionString");
             clusterConfig.AddMemoryStorageProvider("Default");
             clusterConfig.AddMemoryStorageProvider("PubSubStore");
             clusterConfig.AddSimpleMessageStreamProvider("Default");
-            string siloName = config["Id"];
+            var siloName = config["Id"];
 
             var host = new SiloHostBuilder()
                 .UseConfiguration(clusterConfig)
@@ -66,13 +66,12 @@ namespace OrleansHost
                     services.TryAdd(ServiceDescriptor.Singleton<ILoggerFactory, LoggerFactory>());
                     services.TryAdd(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(Logger<>)));
                     services.Configure<ConnectionStrings>(config.GetSection("ConnectionStrings"));
-                    string reduxConnectionString = config.GetConnectionString("ReduxConnectionString");
+                    var reduxConnectionString = config.GetConnectionString("ReduxConnectionString");
                     services.AddSingleton(new ReduxTableStorage<CertState>(reduxConnectionString));
                     services.AddSingleton(new ReduxTableStorage<UserState>(reduxConnectionString));
                     services.AddSingleton(new ReduxTableStorage<CounterState>(reduxConnectionString));
                 })
-                .AddApplicationPart(typeof(CounterGrain).Assembly)
-                .AddApplicationPartsFromReferences(typeof(CounterGrain).Assembly)
+                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(CounterGrain).Assembly).WithReferences())
                 .Build();
 
             try
@@ -84,7 +83,7 @@ namespace OrleansHost
                 Console.ReadLine();
 
                 await host.StopAsync();
-                logger.LogWarning(string.Format($"Orleans silo shutdown."));
+                logger.LogWarning("Orleans silo shutdown.");
             }
             catch (Exception e)
             {
