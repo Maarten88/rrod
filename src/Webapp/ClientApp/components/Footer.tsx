@@ -9,8 +9,8 @@ type FooterProps = FooterState.FooterState & typeof FooterState.actionCreators;
 
 class Footer extends React.Component<FooterProps, FooterState.EmailForm> {
 
-    constructor() {
-        super();
+    constructor(props: FooterProps) {
+        super(props);
         this.state = {
             email: ''
         };

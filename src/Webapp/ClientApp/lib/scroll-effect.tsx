@@ -29,8 +29,8 @@ interface ScrollEffectProps {
 //);
 
 export default class ScrollEffect extends React.Component<ScrollEffectProps, ScrollEffectState> {
-    constructor() {
-        super();
+    constructor(props: ScrollEffectProps) {
+        super(props);
         this.state = {
             animated: false,
         };

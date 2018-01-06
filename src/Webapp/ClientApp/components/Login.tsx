@@ -12,8 +12,8 @@ type LoginProps = LoginStore.LoginState & typeof LoginStore.actionCreators & Rou
 
 class Login extends React.Component<LoginProps, LoginInputModel> {
 
-    constructor() {
-        super();
+    constructor(props: LoginProps) {
+        super(props);
         this.state = {
             email: '',
             password: ''
