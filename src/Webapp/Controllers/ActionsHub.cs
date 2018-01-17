@@ -43,9 +43,16 @@ namespace Webapp
             var actionsSubscription = await actionsStream.SubscribeAsync(
                 // subscribe to the stream of actions coming from grains that need to go to the client
                 async (action, st) => {
-                    // Cast it to Redux Javascript format. The ActionName method is mirrored in the Typewriter Redux template, so typescript knows the same string constants
-                    dynamic jsAction = new { type = action.GetType().Name, payload = action };
-                    await client.InvokeAsync("action", jsAction);
+                    try
+                    {
+                        // Cast it to Redux Javascript format. The ActionName method is mirrored in the Typewriter Redux template, so typescript knows the same string constants
+                        object jsAction = new { type = action.GetType().Name, payload = action };
+                        await client.InvokeAsync("action", jsAction);
+                    }
+                    catch (Exception e)
+                    {
+                        this.logger.LogError(e, "Exception sending {0} action to client over SignalR!", action.GetType().Name);
+                    }
                 });
 
             // We add the subscription to the connection context metadata - this is the easiest way 
