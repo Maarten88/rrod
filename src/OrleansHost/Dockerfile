@@ -1,7 +1,7 @@
-FROM microsoft/dotnet:2.0-runtime AS base
+FROM microsoft/aspnetcore:2.0-runtime AS base
 WORKDIR /app
 
-FROM microsoft/dotnet:2.0-sdk AS build
+FROM microsoft/aspnetcore:2.0-sdk AS build
 WORKDIR /src
 COPY *.sln ./
 COPY src/OrleansHost/OrleansHost.csproj src/OrleansHost/
@@ -10,8 +10,8 @@ COPY src/Grains/Grains.csproj src/Grains/
 RUN dotnet restore
 COPY . .
 WORKDIR /src/src/OrleansHost
-RUN dotnet build -c Release -o /app
-
+#RUN dotnet build -c Release -o /app
+#
 FROM build AS publish
 RUN dotnet publish -c Release -o /app
 
