@@ -11,6 +11,8 @@ using Orleans.Runtime.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace OrleansHost
@@ -49,9 +51,20 @@ namespace OrleansHost
 
             logger.LogWarning("Starting Orleans silo...");
 
-            var clusterConfig = ClusterConfiguration.LocalhostPrimarySilo();
+            // https://dotnet.github.io/orleans/Documentation/Advanced-Concepts/Docker-Deployment.html
+            var clusterConfig = new ClusterConfiguration();
+
             clusterConfig.Globals.ClusterId = config["Id"];
             clusterConfig.Globals.DataConnectionString = config.GetConnectionString("DataConnectionString");
+            clusterConfig.Globals.LivenessType = GlobalConfiguration.LivenessProviderType.AzureTable;
+            clusterConfig.Globals.ReminderServiceType = GlobalConfiguration.ReminderServiceProviderType.AzureTable;
+
+            clusterConfig.Defaults.PropagateActivityId = true;
+            clusterConfig.Defaults.ProxyGatewayEndpoint = new IPEndPoint(IPAddress.Any, 10400);
+            clusterConfig.Defaults.Port = 10300;
+            var ips = Dns.GetHostAddressesAsync(Dns.GetHostName()).Result;
+            clusterConfig.Defaults.HostNameOrIPAddress = ips.Where(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).FirstOrDefault()?.ToString();
+
             clusterConfig.AddMemoryStorageProvider("Default");
             clusterConfig.AddMemoryStorageProvider("PubSubStore");
             clusterConfig.AddSimpleMessageStreamProvider("Default");

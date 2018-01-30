@@ -44,9 +44,18 @@ namespace Webapp
             logger.LogWarning($"Starting Webapp in {environment} environment...");
 
             // Initialize the connection to the OrleansHost process
-            var orleansClientConfig = ClientConfiguration.LocalhostSilo();
-            orleansClientConfig.ClusterId = config["DeploymentId"];
-            orleansClientConfig.DataConnectionString = config.GetConnectionString("DataConnectionString");
+            // var orleansClientConfig = ClientConfiguration.LocalhostSilo();
+            var orleansClientConfig = new ClientConfiguration
+            {
+                ClusterId = config["DeploymentId"],
+                DataConnectionString = config.GetConnectionString("DataConnectionString"),
+                PropagateActivityId = true
+            };
+            // This is for Docker: https://dotnet.github.io/orleans/Documentation/Advanced-Concepts/Docker-Deployment.html
+            var hostEntry = await Dns.GetHostEntryAsync("orleanshost");
+            var ip = hostEntry.AddressList[0];
+            orleansClientConfig.Gateways.Add(new IPEndPoint(ip, 10400));
+
             orleansClientConfig.AddSimpleMessageStreamProvider("Default");
 
             var attempt = 0;
@@ -69,8 +78,8 @@ namespace Webapp
                     orleansClient.Dispose();
 
                     attempt++;
-                    logger.LogWarning($"Attempt {attempt} of 5 failed to initialize the Orleans client.");
-                    if (attempt > 5)
+                    // logger.LogWarning($"Attempt {attempt} of 5 failed to initialize the Orleans client.");
+                    if (attempt > 50)
                     {
                         throw;
                     }

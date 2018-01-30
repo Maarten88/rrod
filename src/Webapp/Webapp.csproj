@@ -6,7 +6,9 @@
     <OutputType>Exe</OutputType>
     <UserSecretsId>rrod-secrets</UserSecretsId>
     <TypescriptCompileBlocked>true</TypescriptCompileBlocked>
+    <TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
     <LangVersion>7.1</LangVersion>
+    <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
   
   <ItemGroup>

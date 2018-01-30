@@ -135,10 +135,10 @@ module.exports = (env) => {
                 test: /\.js$|\.css|\.svg$/,
                 threshold: 10240,
                 minRatio: 0.8
-            }),
-            new BundleAnalyzerPlugin({
-                analyzerMode: 'static',
             })
+            //new BundleAnalyzerPlugin({
+            //    analyzerMode: 'static',
+            //})
         ])
     });
 

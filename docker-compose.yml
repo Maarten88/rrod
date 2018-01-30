@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  webapp:
+    image: webapp
+    build:
+      context: .
+      dockerfile: src/Webapp/Dockerfile
+    depends_on: 
+      - orleanshost
+  orleanshost:
+    image: orleanshost
+    build:
+      context: .
+      dockerfile: src/OrleansHost/Dockerfile
+

@@ -55,7 +55,7 @@
     "lodash-webpack-plugin": "0.11.4",
     "msgpack5": "^3.5.1",
     "node-noop": "1.0.0",
-    "node-sass": "4.5.3",
+    "node-sass": "4.7.2",
     "postcss-cssnext": "3.0.2",
     "postcss-import": "11.0.0",
     "postcss-loader": "2.0.8",
@@ -83,7 +83,7 @@
     "typescript": "2.5.3",
     "uglifyjs-webpack-plugin": "^1.0.1",
     "url-loader": "0.6.2",
-    "webpack": "3",
+    "webpack": "3.10.0",
     "webpack-bundle-analyzer": "2.9.0",
     "webpack-hot-middleware": "2.20.0",
     "webpack-merge": "4.1.0"
