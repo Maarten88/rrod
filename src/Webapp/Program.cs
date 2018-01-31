@@ -28,7 +28,7 @@ namespace Webapp
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
             var isDevelopment = "Development".Equals(environment, StringComparison.OrdinalIgnoreCase);
 
-            var builder = new ConfigurationBuilder()
+            var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddInMemoryCollection(new Dictionary<string, string> // add default settings, that will be overridden by commandline
                 {
@@ -38,14 +38,10 @@ namespace Webapp
                 })
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{environment}.json", optional: true)
-                .AddEnvironmentVariables();
-
-            if (builder.GetFileProvider().GetFileInfo("Webapp.csproj").Exists)
-            {
-                builder.AddUserSecrets<Program>();
-            }
-
-            var config = builder.Build();
+                .AddDockerSecrets("/run/secrets", optional: true)
+                .AddUserSecrets<Program>(optional: true)
+                .AddEnvironmentVariables()
+                .Build();
 
             var loggerFactory = new LoggerFactory()
                 .AddConsole(config.GetSection("Logging"))
@@ -54,7 +50,6 @@ namespace Webapp
             logger.LogWarning($"Starting Webapp in {environment} environment...");
 
             // Initialize the connection to the OrleansHost process
-            // var orleansClientConfig = ClientConfiguration.LocalhostSilo();
             var orleansClientConfig = new ClientConfiguration
             {
                 ClusterId = config["ClusterId"],

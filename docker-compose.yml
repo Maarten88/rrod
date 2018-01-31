@@ -1,4 +1,4 @@
-version: '3'
+version: '3.1'
 
 services:
   webapp:
@@ -6,6 +6,8 @@ services:
     build:
       context: .
       dockerfile: src/Webapp/Dockerfile
+    secrets:
+      - ConnectionStrings__DataConnectionString
     depends_on: 
       - orleanshost
   orleanshost:
@@ -13,4 +15,12 @@ services:
     build:
       context: .
       dockerfile: src/OrleansHost/Dockerfile
+    secrets:
+      - ConnectionStrings__DataConnectionString
+      - ConnectionStrings__ReduxConnectionString
 
+secrets:
+  ConnectionStrings__DataConnectionString:
+    file: ~/AppData/Roaming/Microsoft/UserSecrets/rrod-secrets/DataConnectionString.txt
+  ConnectionStrings__ReduxConnectionString:
+    file: ~/AppData/Roaming/Microsoft/UserSecrets/rrod-secrets/DataConnectionString.txt

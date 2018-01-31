@@ -28,36 +28,29 @@ namespace OrleansHost
         private static async Task Main(string[] args)
         {
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
-            var builder = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddInMemoryCollection(new Dictionary<string, string> // add default settings, that will be overridden by commandline
-                        {
-                            {"Id", "OrleansHost"},
-                            {"Version", "1.0.0"},
-                            {"ClusterId", "rrod-cluster"},
-                        })
-                    .AddCommandLine(args)
-                    .AddJsonFile("appconfig.json", optional: true)
-                    .AddJsonFile($"appconfig.{environment}.json", optional: true)
-                    .AddEnvironmentVariables("ASPNETCORE_");  // The CloudService will pass settings (such as) the connectionstring through environment variables
-
-            if ("Development".Equals(environment) && builder.GetFileProvider().GetFileInfo("OrleansHost.csproj").Exists)
-            {
-                // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
-                builder.AddUserSecrets<Program>();
-            }
-
-            var config = builder.Build();
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddInMemoryCollection(new Dictionary<string, string> // add default settings, that will be overridden by commandline
+                    {
+                        {"Id", "OrleansHost"},
+                        {"Version", "1.0.0"},
+                        {"ClusterId", "rrod-cluster"},
+                    })
+                .AddCommandLine(args)
+                .AddJsonFile("appconfig.json", optional: true)
+                .AddJsonFile($"appconfig.{environment}.json", optional: true)
+                .AddDockerSecrets("/run/secrets", optional: true)   // we can pas connectionstring as a docker secret
+                .AddUserSecrets<Program>(optional: true)            // for development
+                .AddEnvironmentVariables("ASPNETCORE_")             // can override all settings (i.e. URLS) by passing an environment variable
+                .Build();  
 
             LoggerFactory.AddConsole(config.GetSection("Logging"));
             LoggerFactory.AddDebug();
             var logger = LoggerFactory.CreateLogger<Program>();
 
-            logger.LogWarning("Starting Orleans silo...");
+            logger.LogWarning($"Starting Orleans silo in {environment} environment...");
 
-            // https://dotnet.github.io/orleans/Documentation/Advanced-Concepts/Docker-Deployment.html
             var clusterConfig = new ClusterConfiguration();
-
             clusterConfig.Globals.ClusterId = config["ClusterId"];
             clusterConfig.Globals.DataConnectionString = config.GetConnectionString("DataConnectionString");
             clusterConfig.Globals.LivenessType = GlobalConfiguration.LivenessProviderType.AzureTable;
@@ -67,8 +60,6 @@ namespace OrleansHost
             clusterConfig.Defaults.PropagateActivityId = true;
             clusterConfig.Defaults.ProxyGatewayEndpoint = new IPEndPoint(IPAddress.Any, 30000);
             clusterConfig.Defaults.Port = 11111;
-            //var ips = Dns.GetHostAddressesAsync(Dns.GetHostName()).Result;
-            //clusterConfig.Defaults.HostNameOrIPAddress = ips.Where(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).FirstOrDefault()?.ToString();
 
             clusterConfig.AddMemoryStorageProvider("Default");
             clusterConfig.AddMemoryStorageProvider("PubSubStore");
