@@ -3,6 +3,6 @@ version: '3'
 services:
   webapp:
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
     ports:
-      - "5000"
+      - "80:5000"

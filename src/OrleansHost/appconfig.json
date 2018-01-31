@@ -1,7 +1,7 @@
 {
   "ConnectionStrings": {
-    "DataConnectionString": "UseDevelopmentStorage=true",
-    "ReduxConnectionString": "UseDevelopmentStorage=true"
+    "DataConnectionString": "[YOUR CONNECTION STRING]",
+    "ReduxConnectionString": "[YOUR CONNECTION STRING]"
   },
   "AcmeSettings": {
     "AcmeServer": "https://acme-staging.api.letsencrypt.org/directory"

@@ -9,9 +9,11 @@ using Orleans.Concurrency;
 using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Webapp.Services;
 
@@ -19,6 +21,8 @@ namespace Webapp
 {
     public class Program
     {
+        private static readonly ManualResetEvent clientStopped = new ManualResetEvent(false);
+
         public static async Task Main(string[] args)
         {
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
@@ -26,6 +30,12 @@ namespace Webapp
 
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
+                .AddInMemoryCollection(new Dictionary<string, string> // add default settings, that will be overridden by commandline
+                {
+                    {"Id", "Webapp"},
+                    {"Version", "1.0.0"},
+                    {"ClusterId", "rrod-cluster"},
+                })
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{environment}.json", optional: true)
                 .AddEnvironmentVariables();
@@ -47,15 +57,11 @@ namespace Webapp
             // var orleansClientConfig = ClientConfiguration.LocalhostSilo();
             var orleansClientConfig = new ClientConfiguration
             {
-                ClusterId = config["DeploymentId"],
+                ClusterId = config["ClusterId"],
+                GatewayProvider = ClientConfiguration.GatewayProviderType.AzureTable,
                 DataConnectionString = config.GetConnectionString("DataConnectionString"),
                 PropagateActivityId = true
             };
-            // This is for Docker: https://dotnet.github.io/orleans/Documentation/Advanced-Concepts/Docker-Deployment.html
-            var hostEntry = await Dns.GetHostEntryAsync("orleanshost");
-            var ip = hostEntry.AddressList[0];
-            orleansClientConfig.Gateways.Add(new IPEndPoint(ip, 10400));
-
             orleansClientConfig.AddSimpleMessageStreamProvider("Default");
 
             var attempt = 0;
@@ -64,7 +70,6 @@ namespace Webapp
             {
                 orleansClient = new ClientBuilder()
                     .UseConfiguration(orleansClientConfig)
-                    //.AddApplicationPartsFromAppDomain()
                     .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ICounterGrain).Assembly).WithReferences())
                     .Build();
                 try
@@ -78,8 +83,8 @@ namespace Webapp
                     orleansClient.Dispose();
 
                     attempt++;
-                    // logger.LogWarning($"Attempt {attempt} of 5 failed to initialize the Orleans client.");
-                    if (attempt > 50)
+                    logger.LogWarning($"Attempt {attempt} of 8 failed to initialize the Orleans client.");
+                    if (attempt > 7)
                     {
                         throw;
                     }
@@ -95,10 +100,10 @@ namespace Webapp
                 .ToArray();
 
             // find out if we run any secure urls
-            var secureUrls = urls
+            var secureUris = urls
                 .Distinct()
+                .Where(url => url.StartsWith("https://"))
                 .Select(url => new Uri(url))
-                .Where(uri => uri.Scheme == "https")
                 .ToArray();
 
             // It is possible to request Acme certificates with subject alternative names, but this is not yet implemented.
@@ -113,7 +118,7 @@ namespace Webapp
             IWebHost acmeHost;
             AcmeOptions acmeOptions;
 
-            if (!secureUrls.Any())
+            if (!secureUris.Any())
             {
                 httpsDomains = new string[] { };
                 acmeOptions = null;
@@ -122,9 +127,9 @@ namespace Webapp
             else
             {
                 // Kestrel can only listen once to any given port, so we make sure multiple https addresses get only one listener
-                var httpsListen = secureUrls.GroupBy(url => url.Port).Select(url => url.First()).Select(url => "https://*:" + url.Port);
+                var httpsListen = secureUris.GroupBy(url => url.Port).Select(url => url.First()).Select(url => "https://*:" + url.Port);
                 listenUrls = listenUrls.Union(httpsListen);
-                httpsDomains = secureUrls.Select(url => url.Host).Distinct().ToArray();
+                httpsDomains = secureUris.Select(url => url.Host).Distinct().ToArray();
 
                 acmeOptions = new AcmeOptions
                 {
@@ -197,7 +202,7 @@ namespace Webapp
                 {
                     services.AddSingleton<IClusterClient>(orleansClient);
                     services.AddSingleton<ILoggerFactory>(loggerFactory);
-                    if (secureUrls.Any())
+                    if (secureUris.Any())
                         services.AddAcmeCertificateManager(acmeOptions);
                 })
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -208,7 +213,7 @@ namespace Webapp
                 .UseKestrel(async options =>
                 {
                     // TODO: Make this into a nice Kestrel.Https.Acme nuget package
-                    if (secureUrls.Any())
+                    if (secureUris.Any())
                     {
                         // Request a new certificate with Let's Encrypt and store it for next time
                         var certificateManager = options.ApplicationServices.GetService<ICertificateManager>();

@@ -1,7 +1,7 @@
-FROM microsoft/aspnetcore:2.0-runtime AS base
+FROM microsoft/aspnetcore:2.0 AS base
 WORKDIR /app
 
-FROM microsoft/aspnetcore:2.0-sdk AS build
+FROM microsoft/aspnetcore-build:2.0 AS build
 WORKDIR /src
 COPY *.sln ./
 COPY src/OrleansHost/OrleansHost.csproj src/OrleansHost/

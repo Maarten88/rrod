@@ -13,12 +13,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.Loader;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OrleansHost
 {
     internal class Program
     {
+        private static ISiloHost silo;
+        private static readonly ManualResetEvent SiloStopped = new ManualResetEvent(false);
         private static readonly LoggerFactory LoggerFactory = new LoggerFactory();
 
         private static async Task Main(string[] args)
@@ -30,7 +34,7 @@ namespace OrleansHost
                         {
                             {"Id", "OrleansHost"},
                             {"Version", "1.0.0"},
-                            {"DeploymentId", "testdeploymentid"},
+                            {"ClusterId", "rrod-cluster"},
                         })
                     .AddCommandLine(args)
                     .AddJsonFile("appconfig.json", optional: true)
@@ -54,24 +58,26 @@ namespace OrleansHost
             // https://dotnet.github.io/orleans/Documentation/Advanced-Concepts/Docker-Deployment.html
             var clusterConfig = new ClusterConfiguration();
 
-            clusterConfig.Globals.ClusterId = config["Id"];
+            clusterConfig.Globals.ClusterId = config["ClusterId"];
             clusterConfig.Globals.DataConnectionString = config.GetConnectionString("DataConnectionString");
             clusterConfig.Globals.LivenessType = GlobalConfiguration.LivenessProviderType.AzureTable;
             clusterConfig.Globals.ReminderServiceType = GlobalConfiguration.ReminderServiceProviderType.AzureTable;
+            clusterConfig.Globals.FastKillOnCancelKeyPress = true;
 
             clusterConfig.Defaults.PropagateActivityId = true;
-            clusterConfig.Defaults.ProxyGatewayEndpoint = new IPEndPoint(IPAddress.Any, 10400);
-            clusterConfig.Defaults.Port = 10300;
-            var ips = Dns.GetHostAddressesAsync(Dns.GetHostName()).Result;
-            clusterConfig.Defaults.HostNameOrIPAddress = ips.Where(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).FirstOrDefault()?.ToString();
+            clusterConfig.Defaults.ProxyGatewayEndpoint = new IPEndPoint(IPAddress.Any, 30000);
+            clusterConfig.Defaults.Port = 11111;
+            //var ips = Dns.GetHostAddressesAsync(Dns.GetHostName()).Result;
+            //clusterConfig.Defaults.HostNameOrIPAddress = ips.Where(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).FirstOrDefault()?.ToString();
 
             clusterConfig.AddMemoryStorageProvider("Default");
             clusterConfig.AddMemoryStorageProvider("PubSubStore");
             clusterConfig.AddSimpleMessageStreamProvider("Default");
             var siloName = config["Id"];
 
-            var host = new SiloHostBuilder()
+            silo = new SiloHostBuilder()
                 .UseConfiguration(clusterConfig)
+                // .ConfigureLogging(logBuilder => logBuilder.SetMinimumLevel(LogLevel.Warning).AddConsole())
                 .ConfigureSiloName(siloName)
                 .ConfigureServices(services =>
                 {
@@ -87,21 +93,35 @@ namespace OrleansHost
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(CounterGrain).Assembly).WithReferences())
                 .Build();
 
+                await StartSilo();
+
+                AssemblyLoadContext.Default.Unloading += context =>
+                {
+                    Task.Run(StopSilo);
+                    SiloStopped.WaitOne();
+                };
+
+                SiloStopped.WaitOne();
+            }
+
+        private static async Task StartSilo()
+        {
             try
             {
-                await host.StartAsync();
-
-                logger.LogInformation(string.Format($"Successfully started Orleans silo {siloName}"));
-                Console.WriteLine($"Silo {siloName} is running. Press [enter] to stop...");
-                Console.ReadLine();
-
-                await host.StopAsync();
-                logger.LogWarning("Orleans silo shutdown.");
+                await silo.StartAsync();
+                Console.WriteLine("Silo started");
             }
             catch (Exception e)
             {
-                logger.LogCritical(e, "Silo stopping fatally with exception: " + e.Message);
+                Console.WriteLine("Silo stopping fatally with exception: " + e.Message);
             }
+        }
+
+        private static async Task StopSilo()
+        {
+            await silo.StopAsync();
+            Console.WriteLine("Silo stopped");
+            SiloStopped.Set();
         }
     }
 }
