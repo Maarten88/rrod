@@ -16,6 +16,7 @@ using System.Net;
 using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
+using Orleans.Runtime;
 
 namespace OrleansHost
 {
@@ -41,7 +42,7 @@ namespace OrleansHost
                 .AddJsonFile($"appconfig.{environment}.json", optional: true)
                 .AddDockerSecrets("/run/secrets", optional: true)   // we can pas connectionstring as a docker secret
                 .AddUserSecrets<Program>(optional: true)            // for development
-                .AddEnvironmentVariables("ASPNETCORE_")             // can override all settings (i.e. URLS) by passing an environment variable
+                .AddEnvironmentVariables("RROD_")                   // can override all settings (i.e. URLS) by passing an environment variable
                 .Build();  
 
             LoggerFactory.AddConsole(config.GetSection("Logging"));
@@ -102,9 +103,13 @@ namespace OrleansHost
                 await silo.StartAsync();
                 Console.WriteLine("Silo started");
             }
+            catch (OrleansLifecycleCanceledException e)
+            {
+                Console.WriteLine("Silo could not be started with exception: " + e.InnerException.Message);
+            }
             catch (Exception e)
             {
-                Console.WriteLine("Silo stopping fatally with exception: " + e.Message);
+                Console.WriteLine("Silo could not be started with exception: " + e.Message);
             }
         }
 

@@ -15,6 +15,55 @@
             "protocol": "inspector"
         },
         {
+            "name": "Launch OrleansHost in Docker",
+            "type": "coreclr",
+            "request": "launch",
+            "requireExactSource": false,
+            "program": "/app/src/OrleansHost/out/OrleansHost.dll",
+            "cwd": "/app/src/OrleansHost/out",
+            "sourceFileMap": {
+                "/app": "${workspaceRoot}"
+            },
+            "pipeTransport": {
+                "pipeProgram": "docker",
+                "pipeCwd": "${workspaceRoot}",
+                "pipeArgs": [
+                    "exec -i orleanshost.debug_1"
+                ],
+                "pipeEnv": {
+                    "RROD_ConnectionStrings__DataConnectionString": "${env.RROD_ConnectionStrings__DataConnectionString}",
+                    "RROD_ConnectionStrings__ReduxConnectionString": "${env.RROD_ConnectionStrings__DataConnectionString}",
+                    "ASPNETCORE_ENVIRONMENT": "Development"
+                },
+                "quoteArgs": false,
+                "debuggerPath": "/vsdbg/vsdbg"
+            }
+        },
+        {
+            "name": "Launch Webapp in Docker",
+            "type": "coreclr",
+            "request": "launch",
+            "requireExactSource": false,
+            "program": "/app/src/Webapp/out/Webapp.dll",
+            "cwd": "/app/src/Webapp",
+            "sourceFileMap": {
+                "/app": "${workspaceRoot}"
+            },
+            "pipeTransport": {
+                "pipeProgram": "docker",
+                "pipeCwd": "${workspaceRoot}",
+                "pipeArgs": [
+                    "exec -i webapp.debug_1"
+                ],
+                "pipeEnv": {
+                    "RROD_ConnectionStrings__DataConnectionString": "${env.RROD_ConnectionStrings__DataConnectionString}",
+                    "ASPNETCORE_ENVIRONMENT": "Development"
+                },
+                "quoteArgs": false,
+                "debuggerPath": "/vsdbg/vsdbg"
+            }
+        },
+        {
             "name": "Launch OrleansHost",
             "type": "coreclr",
             "request": "launch",

@@ -1,10 +1,13 @@
 {
     "version": "2.0.0",
     "type": "shell",
+    "options": {
+        "cwd": "${workspaceRoot}"
+    },
     "args": [],
     "tasks": [
         {
-            "taskName": "Build All",
+            "label": "Dotnet Build All",
             "command": "dotnet",
             "args": [
                 "build"
@@ -19,7 +22,113 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "taskName": "Build OrleansHost",
+            "label": "Test WSL",
+            "command": "env",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build OrleansHost - Docker",
+            "command": "docker",
+            "args": [
+                "build",
+                ".",
+                "-f",
+                "./src/OrleansHost/Dockerfile.debug", 
+                "-t",
+                "orleanshost.debug"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Start OrleansHost - Docker",
+            "command": "docker",
+            "args": [
+                "run",
+                "-d",
+                "-e",
+                "RROD_ConnectionStrings__DataConnectionString='${env:RROD_ConnectionStrings__DataConnectionString}'",
+                "-e",
+                "RROD_ConnectionStrings__ReduxConnectionString='${env:RROD_ConnectionStrings__DataConnectionString}'",
+                "--name",
+                "orleanshost.debug_1", 
+                "orleanshost.debug"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Cleanup OrleansHost - Docker",
+            "command": "docker",
+            "args": [
+                "rm",
+                "-f",
+                "orleanshost.debug_1"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Webapp - Docker",
+            "command": "docker",
+            "args": [
+                "build",
+                ".",
+                "-f",
+                "./src/Webapp/Dockerfile.debug", 
+                "-t",
+                "webapp.debug"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Start Webapp - Docker",
+            "command": "docker",
+            "args": [
+                "run",
+                "-d",
+                "-e",
+                "RROD_ConnectionStrings__DataConnectionString='${env:RROD_ConnectionStrings__DataConnectionString}'",
+                "-p",
+                "5000:5000",
+                "--name",
+                "webapp.debug_1", 
+                "webapp.debug"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Cleanup Webapp - Docker",
+            "command": "docker",
+            "args": [
+                "rm",
+                "-f",
+                "webapp.debug_1"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build OrleansHost",
             "command": "dotnet",
             "args": [
                 "build"
@@ -31,7 +140,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "taskName": "Build Webapp",
+            "label": "Build Webapp",
             "command": "dotnet",
             "args": [
                 "build"
@@ -44,7 +153,7 @@
         },
         {
             "command": "webpack",
-            "taskName": "Webpack",
+            "label": "Webpack",
             "group": "build",
             "problemMatcher": "$tsc",
             "options": {
@@ -52,7 +161,7 @@
             }
         },
         {
-            "taskName": "Build All",
+            "label": "Build All",
             "dependsOn": ["Build OrleansHost", "Build Webapp", "Webpack"],
             "group": "build",
             "problemMatcher": ["$msCompile", "$tsc"]

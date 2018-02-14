@@ -40,7 +40,7 @@ namespace Webapp
                 .AddJsonFile($"appsettings.{environment}.json", optional: true)
                 .AddDockerSecrets("/run/secrets", optional: true)
                 .AddUserSecrets<Program>(optional: true)
-                .AddEnvironmentVariables()
+                .AddEnvironmentVariables("RROD_")
                 .Build();
 
             var loggerFactory = new LoggerFactory()

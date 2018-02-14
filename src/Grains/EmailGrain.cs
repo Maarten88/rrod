@@ -51,7 +51,7 @@ namespace Grains
                 };
                 email.Attachments.ForEach(attachment => {
                     multipart.Add(new MimePart (attachment.MimeType) {
-                        ContentObject = new ContentObject (new MemoryStream(attachment.Data), ContentEncoding.Default),
+                        Content = new MimeContent (new MemoryStream(attachment.Data), ContentEncoding.Default),
                         ContentDisposition = new ContentDisposition (ContentDisposition.Attachment),
                         ContentTransferEncoding = ContentEncoding.Base64,
                         FileName = attachment.Name

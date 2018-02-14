@@ -85,11 +85,12 @@
   <Target Name="RunWebpack" AfterTargets="ComputeFilesToPublish">
     <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
     <Exec Command="npm install" />
-    <Exec Command="node node_modules/webpack/bin/webpack.js --env.prod" />
+    <Exec Condition="'$(Configuration)'=='Production'" Command="node node_modules/webpack/bin/webpack.js --env.prod" />
+    <Exec Condition="'$(Configuration)'=='Debug'" Command="node node_modules/webpack/bin/webpack.js" />
 
     <!-- Include the newly-built files in the publish output -->
     <ItemGroup>
-      <DistFiles Include="wwwroot\dist\**; ClientApp\dist\**" />
+      <DistFiles Include="wwwroot/dist/**;ClientApp/dist/**" />
       <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
         <RelativePath>%(DistFiles.Identity)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
@@ -97,7 +98,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(Configuration)'=='Debug'">
-      <NpmFiles Include="node_modules\**;package.json;webpack.config.js;tsconfig.json;postcss.config.js;.babelrc" />
+      <NpmFiles Include="node_modules/**;*.json;*.js;*.lock;*.rsa" />
       <ResolvedFileToPublish Include="@(NpmFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
         <RelativePath>%(NpmFiles.Identity)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

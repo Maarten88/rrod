@@ -7,12 +7,10 @@
         "target": "es2017",
         "jsx": "react",
         "sourceMap": false,
-        // "skipDefaultLibCheck": true,
         "lib": [ "es2017", "dom" ],
         "allowJs": false,
         "types": [ 
-            "webpack-env",
-            "EventSource"
+            "webpack-env"
         ],
         "typeRoots": [
             "ClientApp/types",
