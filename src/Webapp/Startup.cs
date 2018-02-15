@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Orleans;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
@@ -25,11 +26,13 @@ namespace Webapp
         private readonly ILoggerFactory loggerFactory;
         private readonly IHostingEnvironment env;
         private readonly IConfiguration configuration;
+        private readonly IClusterClient clusterClient; 
 
-        public Startup(IHostingEnvironment env, IConfiguration configuration, ILoggerFactory loggerFactory)
+        public Startup(IHostingEnvironment env, IConfiguration configuration, IClusterClient clusterClient, ILoggerFactory loggerFactory)
         {
             this.env = env;
             this.configuration = configuration;
+            this.clusterClient = clusterClient;
             this.loggerFactory = loggerFactory;
         }
 
@@ -53,6 +56,9 @@ namespace Webapp
                 options.EnableForHttps = true;
                 options.Providers.Add<GzipCompressionProvider>();
             });
+
+            services.AddDataProtection()
+                .PersistKeysToOrleans(this.clusterClient);
 
             services.AddAntiforgery(options =>
             {

@@ -8,6 +8,7 @@ WORKDIR /build/src/OrleansHost
 RUN dotnet publish -c Release -o /app
 
 FROM base AS final
+ENV ASPNETCORE_ENVIRONMENT Production
 WORKDIR /app
 COPY --from=publish /app .
 ENTRYPOINT ["dotnet", "OrleansHost.dll"]

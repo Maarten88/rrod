@@ -36,6 +36,7 @@ namespace Webapp
                     {"Version", "1.0.0"},
                     {"ClusterId", "rrod-cluster"},
                 })
+                .AddCommandLine(args)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{environment}.json", optional: true)
                 .AddDockerSecrets("/run/secrets", optional: true)

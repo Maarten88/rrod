@@ -81,6 +81,7 @@ namespace OrleansHost
                     services.AddSingleton(new ReduxTableStorage<CertState>(reduxConnectionString));
                     services.AddSingleton(new ReduxTableStorage<UserState>(reduxConnectionString));
                     services.AddSingleton(new ReduxTableStorage<CounterState>(reduxConnectionString));
+                    services.AddSingleton(new ReduxTableStorage<StringStoreState>(reduxConnectionString));
                 })
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(CounterGrain).Assembly).WithReferences())
                 .Build();
