@@ -1,18 +1,22 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { Link, RouteComponentProps } from 'react-router-dom';
+import { Link, RouteComponentProps, Redirect } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { Grid, Col, Row, Button, Checkbox, Form, FormGroup, FormControl, InputGroup, InputGroupAddon } from 'react-bootstrap';
-import { ApplicationState } from '../store';
+import { Grid, Col, Row, Button, Checkbox, Form, FormGroup, FormControl, InputGroup, InputGroupAddon, HelpBlock } from 'react-bootstrap';
+import { ApplicationState } from '../store/';
 import * as LoginStore from '../store/Login';
-import { LoginInputModel } from '../server/LoginInputModel';
-import { Redirect } from 'react-router-dom';
+import { LoginModel } from '../server/LoginModel';
+import { HeadTag } from '../lib/react-head';
+
+function head() {
+    return <HeadTag key="title" tag="title">Atenta - Login</HeadTag>;
+}
 
 type LoginProps = LoginStore.LoginState & typeof LoginStore.actionCreators & RouteComponentProps<{}>;
 
-class Login extends React.Component<LoginProps, LoginInputModel> {
+class Login extends React.Component<LoginProps, LoginModel> {
 
-    constructor(props: LoginProps) {
+    constructor(props) {
         super(props);
         this.state = {
             email: '',
@@ -20,30 +24,52 @@ class Login extends React.Component<LoginProps, LoginInputModel> {
         };
     }
 
-    handleChange = (e: any) => {
+    handleChange(e: React.ChangeEvent<any>) { // should be HTMLInputElement
         this.setState({ ...this.state, [e.target.name]: e.target.value });
     }
 
-    login = (event: React.FormEvent<Form>) => {
-        this.props.startLogin(this.state);
+    private login(event: React.FormEvent<Form>) {
+        this.props.login(this.state);
         event.preventDefault();
     }
 
-    getValidationState = (): "success" | "warning" | "error" => {
+    getValidationState(): "success" | "warning" | "error" {
         return null;
     }
 
-    public renderLoggedIn() {
-        return <Grid>
-            <h1>Logged in as { this.props.userName }</h1>
-
-           <Redirect to="/" />
-        </Grid>;
+    queryParam(name: string, location: string): string {
+        var results = new RegExp(`[\?&]${name}=([^&#]*)`).exec(location);
+        if (results == null) {
+            return null;
+        }
+        else {
+            return decodeURIComponent(results[1]) || null;
+        }
     }
 
-    public renderAnonymous() {
+    renderLoggedIn() {
+        var redirect: string;
+        // const query = new URLSearchParams(this.props.location.search);
+        const returnUrl = this.queryParam('returnUrl', this.props.location.search);
+        const isAbsolute = new RegExp('^([a-z]+://|//)', 'i');
+        if (returnUrl && !isAbsolute.test(returnUrl)) {
+            redirect = returnUrl;
+        } else {
+            redirect = "/";
+        }
+
+        if (redirect === this.props.history.location.pathname)
+            return null;
+
+        return (<Grid>
+            <Redirect to={redirect} />
+        </Grid>);
+    }
+
+    renderAnonymous() {
         return <Grid className="omb_login">
-            <h3 className="omb_authTitle">Login or <Link to={'/Register'}>Register as new user</Link></h3>
+            {head()}
+            <h2 className="omb_authTitle">Login of <Link to={'/Register'}>Registreer</Link></h2>
             <Row className="omb_socialButtons">
                 <Col xs={4} sm={2} smOffset={3} >
                     <Link to="#" className="btn btn-lg btn-block omb_btn-facebook">
@@ -68,46 +94,46 @@ class Login extends React.Component<LoginProps, LoginInputModel> {
             <Row className="omb_loginOr">
                 <Col xs={12} sm={6} smOffset={3} >
                     <hr className="omb_hrOr" />
-                    <span className="omb_spanOr">or</span>
-			    </Col>
+                    <span className="omb_spanOr">of</span>
+                </Col>
             </Row>
 
             <Row>
                 <Col xs={12} sm={6} smOffset={3} >
-                    <Form className="omb_loginForm" onSubmit={this.login} autoComplete="off">
+                    <Form className="omb_loginForm" onSubmit={(e) => this.login(e)} autoComplete="off">
                         <FormGroup validationState={this.getValidationState()}>
                             <InputGroup>
                                 <InputGroup.Addon><i className="fa fa-user" /></InputGroup.Addon>
-                                <FormControl name="email" type="text" onChange={this.handleChange} placeholder="Email adres" />
+                                <FormControl name="email" type="text" onChange={(e) => this.handleChange(e)} placeholder="Login Naam" />
                             </InputGroup>
                             <FormControl.Feedback />
                         </FormGroup>
 
-                        <FormGroup>
+                        <FormGroup validationState={this.props.loginError ? "error" : null}>
                             <InputGroup>
                                 <InputGroup.Addon><i className="fa fa-lock" /></InputGroup.Addon>
-                                <FormControl name="password" type="password" onChange={this.handleChange} placeholder="Password" />
+                                <FormControl name="password" type="password" onChange={(e) => this.handleChange(e)} placeholder="Password" />
                             </InputGroup>
-                            <FormControl.Feedback />
+                            <HelpBlock>{this.props.loginError}</HelpBlock>
                         </FormGroup>
 
                         <Button className="btn btn-lg btn-primary btn-block" type="submit">Inloggen</Button>
-    				</Form>
+                    </Form>
                 </Col>
             </Row>
 
             <Row>
                 <Col xs={12} sm={3} smOffset={3}>
                     <FormGroup>
-                        <Checkbox>Keep me logged in</Checkbox>
+                        <Checkbox>Onthou mij</Checkbox>
                     </FormGroup>
-    			</Col>
+                </Col>
                 <Col xs={12} sm={3}>
                     <p className="omb_forgotPwd">
                         <Link to="#">Password vergeten?</Link>
                     </p>
                 </Col>
-            </Row>	    
+            </Row>
         </Grid>
     }
 

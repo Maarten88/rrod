@@ -3,7 +3,8 @@
 
 import { ApiResult } from './ApiResult';
 
-export class ApiModel  { 
-    result?: ApiResult;
+export class ApiModel<TValue>  { 
+    result: ApiResult;
+    value?: TValue;
 }
 

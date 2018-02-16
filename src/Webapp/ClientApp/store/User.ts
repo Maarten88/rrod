@@ -2,6 +2,7 @@
 import { Action, Reducer, ActionCreator } from 'redux';
 import { AppThunkAction } from './';
 import { UserModel } from '../server/UserModel';
+import { LOGIN_SUCCESS, LOGOUT_SUCCESS } from './Login';
 import * as Server from '../server/User';
 
 export const GETUSER_REQUEST = 'GetUserRequestAction';
@@ -33,16 +34,21 @@ type KnownAction = GetUserRequestAction | GetUserReceivedAction;
 
 export const actionCreators = {
 
-    getUser: (): AppThunkAction<KnownAction> => async (dispatch, getState) => {
+    getUser: () => async (dispatch, getState) => {
         let fetchTask = fetch('/account/getuser', {
                 credentials: 'include',
-                headers: {
+                headers: new Headers({
                     'Content-Type': 'application/json'
-                }
+                })
             })
             .then(response => response.json() as Promise<UserModel>)
             .then(userModel => {
-            dispatch({ type: GETUSER_RECEIVED, payload: userModel });
+                dispatch({ type: GETUSER_RECEIVED, payload: userModel });
+                if (userModel.isAuthenticated) {
+                    dispatch({ type: LOGIN_SUCCESS });
+                } else {
+                    dispatch({ type: LOGOUT_SUCCESS });
+                }
             });
 
         addTask(fetchTask);

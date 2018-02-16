@@ -156,7 +156,7 @@ namespace Grains
 
         public string FromAddress
         {
-            get => this.TryGetValue("FromAddress", out object fromAddress) ? fromAddress.ToString() : "maarten@sikkema.com";
+            get => this.TryGetValue("FromAddress", out object fromAddress) ? fromAddress.ToString() : "rrod@example.com";
             set
             {
                 this["FromAddress"] = value;

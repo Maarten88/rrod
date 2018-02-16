@@ -1,7 +1,8 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Text;
 
 namespace Webapp.Models
 {
@@ -14,15 +15,13 @@ namespace Webapp.Models
 
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string Message { get; set; }
+
         /// <summary>
         /// Dictionary key is the field having the error
         /// Value is a list of errors. We don't support errors caused by a combination of fields like the Nancy ModelResult
         /// </summary>
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public Dictionary<string, List<string>> Errors { get; set; }
-
-        //[JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        //public Exception Exception { get; set; }
 
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public int Code { get; set; }
@@ -45,6 +44,12 @@ namespace Webapp.Models
             this.Code = 0;
         }
 
+        public ApiResult(Dictionary<string, List<string>> errors)
+        {
+            this.Errors = errors;
+            this.Code = 0;
+        }
+
         // Helper methods
         public static ApiResult AsError(string errorField, string errorMessage)
         {
@@ -59,28 +64,15 @@ namespace Webapp.Models
             return new ApiResult { Message = message };
         }
 
-        public static ApiResult AsException(Exception exception, bool includeExceptions = false)
+        public static ApiResult SuccessResult = ApiResult.AsSuccess();
+
+        public static ApiResult FromException(Exception exception, bool includeExceptions = false)
         {
             ApiResult result;
             if (includeExceptions)
             {
                 result = new ApiResult { Message = "Exception(s) occurred" };
                 result.Errors.Add("Exceptions", new List<string>(new[] { exception.Message }));
-            }
-            else
-            {
-                result = ApiResult.AsError("Server Error");
-            }
-            return result;
-        }
-
-        public static ApiResult AsException(AggregateException exception, bool includeExceptions = false)
-        {
-            ApiResult result;
-            if (includeExceptions)
-            {
-                result = new ApiResult { Message = "Exception(s) occurred" };
-                result.Errors.Add("Exceptions", new List<string>(exception.InnerExceptions.Select(e => e.Message)));
             }
             else
             {

@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Webapp.Helpers;
 using Webapp.Identity;
 using Webapp.Models;
 
@@ -54,38 +55,31 @@ namespace Webapp.Account
 
         //
         // POST: /Account/Login
-        [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login([FromBody]LoginInputModel model)
+        [ProducesResponseType(typeof(LoginModel), 200)]
+        [ProducesResponseType(typeof(LoginModel), 400)]
+        public async Task<IActionResult> Login([FromBody]LoginModel model)
         {
             // Hack to work around rc1 bug
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+                return BadRequest(this.ModelState.AsApiModel(model));
+
+            var result = await this.signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
+            if (result.Succeeded)
             {
-                var result = await this.signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberLogin, lockoutOnFailure: true);
-                if (result.Succeeded)
-                {
-                    this.logger.LogInformation(1, "User logged in.");
-                    return Ok(new LoginResponseModel { Result = ApiResult.AsSuccess() });
-                }
-                else
-                {
-                    this.logger.LogWarning(2, "User login failed.");
-                    var response = new LoginResponseModel
-                    {
-                        IsLockedOut = result.IsLockedOut,
-                        IsNotAllowed = result.IsNotAllowed,
-                        RequiresTwoFactor = result.RequiresTwoFactor,
-                        Result = ApiResult.AsError("Login Failed")
-                    };
-                    return BadRequest(response);
-                }
+                this.logger.LogInformation(1, "User logged in.");
+                return Ok(ApiModel.AsSuccess(model));
             }
             else
             {
-                return BadRequest(ApiModel.AsError("model validation failed (TODO add the errors)"));
+                this.logger.LogWarning(2, "User login failed.");
+                model.IsLockedOut = result.IsLockedOut;
+                model.IsNotAllowed = result.IsNotAllowed;
+                model.RequiresTwoFactor = result.RequiresTwoFactor;
+                return this.BadRequest(ApiModel.AsError(model, "Login failed"));
             }
         }
 
@@ -171,59 +165,40 @@ namespace Webapp.Account
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register([FromBody]RegisterViewModel model)
+        [ProducesResponseType(typeof(RegisterModel), 200)]
+        [ProducesResponseType(typeof(RegisterModel), 400)]
+        public async Task<IActionResult> Register([FromBody]RegisterModel model)
         {
-            if (ModelState.IsValid)
-            {
-                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
-                var result = await userManager.CreateAsync(user, model.Password);
-                if (result.Succeeded)
-                {
-                    // For more information on how to enable account confirmation and password reset please visit http://go.microsoft.com/fwlink/?LinkID=532713
-                    // Send an email with this link
-                    //var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    //var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, protocol: HttpContext.Request.Scheme);
-                    //await _emailSender.SendEmailAsync(model.Email, "Confirm your account",
-                    //    $"Please confirm your account by clicking this link: <a href='{callbackUrl}'>link</a>");
-                    await signInManager.SignInAsync(user, isPersistent: true);
-                    logger.LogInformation(3, "User created a new account with password.");
+            if (!ModelState.IsValid)
+                return this.BadRequest(this.ModelState.AsApiModel(model));
 
-                    //var tokens = this.antiForgery.GetAndStoreTokens(this.HttpContext);
-                    //if (!string.IsNullOrWhiteSpace(tokens.RequestToken))
-                    //{
-                    //    var cookieOptions = new CookieOptions
-                    //    {
-                    //        HttpOnly = false,
-                    //        Secure = this.Request.IsHttps
-                    //    };
-                    //    this.Response.Cookies.Append(Constants.AntiForgeryCookieName, tokens.RequestToken, cookieOptions);
-                    //}
 
-                    return Ok(ApiModel.AsSuccess());
-                }
-                else
-                {
-                    var apiResult = new ApiResult();
-                    foreach (var error in result.Errors)
-                    {
-                        apiResult.Errors.Add(String.Empty, new List<string> { error.Description });
-                    }
-                    return BadRequest(new ApiModel(apiResult));
-                }
-            }
-            else
-            {
-                var apiResult = new ApiResult();
-                foreach (var modelState in ModelState.Values)
-                {
-                    foreach (var error in modelState.Errors)
-                    {
-                        // TODO Test this
-                        apiResult.Errors.Add(modelState.ToString(), new List<string> { error.ErrorMessage });
-                    }
-                }
-                return BadRequest(new ApiModel(apiResult));
-            }
+            var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+            var result = await userManager.CreateAsync(user, model.Password);
+            if (!result.Succeeded)
+                return BadRequest(result.AsApiModel(model));
+
+            // For more information on how to enable account confirmation and password reset please visit http://go.microsoft.com/fwlink/?LinkID=532713
+            // Send an email with this link
+            //var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            //var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, protocol: HttpContext.Request.Scheme);
+            //await _emailSender.SendEmailAsync(model.Email, "Confirm your account",
+            //    $"Please confirm your account by clicking this link: <a href='{callbackUrl}'>link</a>");
+            await signInManager.SignInAsync(user, isPersistent: true);
+            logger.LogInformation(3, "User created a new account with password.");
+
+            //var tokens = this.antiForgery.GetAndStoreTokens(this.HttpContext);
+            //if (!string.IsNullOrWhiteSpace(tokens.RequestToken))
+            //{
+            //    var cookieOptions = new CookieOptions
+            //    {
+            //        HttpOnly = false,
+            //        Secure = this.Request.IsHttps
+            //    };
+            //    this.Response.Cookies.Append(Constants.AntiForgeryCookieName, tokens.RequestToken, cookieOptions);
+            //}
+
+            return Ok(ApiModel.AsSuccess<RegisterModel>(null));
         }
 
         [HttpGet]

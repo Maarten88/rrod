@@ -5,6 +5,7 @@ import { ApplicationState }  from '../store';
 import * as CounterStore from '../store/Counter';
 import Transition from "react-transition-group/Transition";
 import * as Animated from 'react-dom-animated';
+import { HeadTag } from '../lib/react-head';
 
 type CounterProps = CounterStore.CounterState & typeof CounterStore.actionCreators;
 interface CounterState {
@@ -89,6 +90,9 @@ class Counter extends React.Component<CounterProps, CounterState> {
 
     public render() {
         return <div className="container">
+            <HeadTag key="title" tag="title">RROD - Counter Page</HeadTag>
+            <HeadTag key="meta:description" tag="meta" name="description" content="This page demos the classical Redux Counter sample, adding a realtime eventsourcing actor backend" />
+     
             <h1>Counter</h1>
 
             <p>

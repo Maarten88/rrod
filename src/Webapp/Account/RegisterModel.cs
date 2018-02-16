@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Webapp.Account
 {
     [JsonObject]
-    public class RegisterViewModel
+    public class RegisterModel
     {
         [Required]
         [EmailAddress]

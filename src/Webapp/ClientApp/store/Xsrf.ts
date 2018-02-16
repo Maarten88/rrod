@@ -2,6 +2,8 @@ import { fetch } from 'domain-task';
 import { Reducer, ActionCreator } from 'redux';
 import { AppThunkAction } from './';
 import * as Cookies from 'js-cookie';
+import { ApiModel } from '../server/ApiModel';
+import { XsrfModel } from '../server/Xsrf';
 
 // -----------------
 // STATE - This defines the type of data maintained in the Redux store.
@@ -43,16 +45,16 @@ export const actionCreators = {
             }) as Response;
 
             if (response.ok) {
-                let token = Cookies.get("XSRF-TOKEN");
-                dispatch({ type: SET_XSRF_TOKEN, payload: token });
+                let data = await response.json() as ApiModel<XsrfModel>;
+                if (data.result && data.result.status === "OK") {
+                    dispatch({ type: SET_XSRF_TOKEN, payload: data.value.xsrfToken });
+                } else {
+                    dispatch({ type: SET_XSRF_TOKEN, payload: undefined });
+                }
             } else {
                 dispatch({ type: SET_XSRF_TOKEN, payload: undefined });
             }
         })();
-    },
-    update: (): AppThunkAction<KnownAction> => (dispatch, getState) => {
-        let token = Cookies.get("XSRF-TOKEN");
-        dispatch({ type: SET_XSRF_TOKEN, payload: token });
     }
 };
 

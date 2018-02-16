@@ -1,34 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using GrainInterfaces;
 using Microsoft.AspNetCore.Mvc;
 using Orleans;
 using Webapp.Models;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Webapp.Identity;
 using Microsoft.Extensions.DependencyInjection;
-using Webapp.Account;
-using IdentityServer4.Services;
-using IdentityServer4.Models;
-using IdentityServer4.Configuration;
-using IdentityServer4.Validation;
-using System.Security.Claims;
 using Microsoft.Extensions.Logging;
-using IdentityModel;
-using IdentityServer4.Extensions;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http.Authentication;
-
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Builder;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System.Security.Cryptography;
+using Microsoft.AspNetCore.SpaServices.Prerendering;
+using Webapp.Helpers;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Webapp.Controllers
 {
@@ -46,60 +31,35 @@ namespace Webapp.Controllers
         readonly IAntiforgery antiForgery;
         readonly Guid sessionId;
         readonly IServiceProvider serviceProvider;
-        readonly ILoggerFactory loggerFactory;
-        readonly IClusterClient grainClient;
+        readonly ILogger logger;
+        readonly IClusterClient clusterClient;
+        readonly ISpaPrerenderer spaPrerenderer;
+        readonly IHostingEnvironment env;
 
-        public HomeController(ITempDataProvider cookie, IAntiforgery antiForgery, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, IClusterClient grainClient, ILoggerFactory loggerFactory) : base()
+        public HomeController(IAntiforgery antiForgery, IHttpContextAccessor httpContextAccessor, ISpaPrerenderer spaPrerenderer, IServiceProvider serviceProvider, IClusterClient clusterClient, IHostingEnvironment env, ILoggerFactory loggerFactory) : base()
         {
             // this.cookie = cookie;
             this.antiForgery = antiForgery;
             this.serviceProvider = serviceProvider;
-            this.grainClient = grainClient;
-            this.loggerFactory = loggerFactory;
+            this.clusterClient = clusterClient;
+            this.spaPrerenderer = spaPrerenderer;
+            this.env = env;
+            this.logger = loggerFactory.CreateLogger<HomeController>();
 
-            // Create session id in an client-unreadable cookie
-            IDictionary<string, object> cookieData;
-            try
+            string sessionCookie = httpContextAccessor.HttpContext.Request.Cookies["SESSION"];
+            if (string.IsNullOrEmpty(sessionCookie) || !Guid.TryParse(sessionCookie, out this.sessionId))
             {
-                cookieData = cookie.LoadTempData(httpContextAccessor.HttpContext);
-            }
-            catch (CryptographicException)
-            {
-                // Server key changed?
-                cookieData = new Dictionary<string, object>();
-            }
-
-            if (cookieData.TryGetValue("session", out object id) && (id is Guid))
-            {
-                this.sessionId = (Guid)id;
-            }
-            else
-            {
-                // generate a new session id
-                cookieData["session"] = this.sessionId = Guid.NewGuid();
-                cookie.SaveTempData(httpContextAccessor.HttpContext, cookieData);
+                this.sessionId = Guid.NewGuid();
+                httpContextAccessor.HttpContext.Response.Cookies.Append("SESSION", this.sessionId.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow + TimeSpan.FromDays(365), HttpOnly = false, Secure = !this.env.IsDevelopment() });
             }
         }
 
         public async Task<ActionResult> Index()
         {
             var tokens = this.antiForgery.GetAndStoreTokens(this.HttpContext);
-            if (!string.IsNullOrWhiteSpace(tokens.RequestToken))
-            {
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = false,
-                    Secure = this.Request.IsHttps
-                };
-                this.Response.Cookies.Append(Constants.AntiForgeryCookieName, tokens.RequestToken, cookieOptions);
-            }
-
-            // Render this token in a div, so our javascript can read it and send it, and send it in the ajax request header where it can be validated against the XSRF-TOKEN cookie
-            this.ViewBag.AntiForgeryRequestToken = tokens.RequestToken;
-            this.ViewBag.SessionId = this.sessionId;
 
             UserModel userModel;
-            // var userManager = this.serviceProvider.GetService<UserManager<ApplicationUser>>();
+
             if (this.User.Identity.IsAuthenticated)
             {
                 var userManager = this.serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -112,33 +72,6 @@ namespace Webapp.Controllers
                     FirstName = user.PersonalData?.FirstName,
                     LastName = user.PersonalData?.LastName
                 };
-
-                //    var client = Config.GetClients().Where(c => c.ClientId == "Webapp").FirstOrDefault();
-
-                //    var claims = new List<Claim>();
-                //    // client claims
-                //    claims.Add(new Claim(JwtClaimTypes.ClientId, client.ClientId));
-                //    claims.AddRange(client.AllowedScopes.Select(name => new Claim(JwtClaimTypes.Scope, name)));
-
-                //    // subject claims
-                //    claims.Add(new Claim(JwtClaimTypes.Subject, user.UserId));
-                //    claims.Add(new Claim(JwtClaimTypes.AuthenticationTime, DateTime.UtcNow.ToEpochTime().ToString(), ClaimValueTypes.Integer)); // DateTime.UtcNow.ToEpochTime().ToString()
-                //    claims.Add(new Claim(JwtClaimTypes.IdentityProvider, this.User.GetIdentityProvider()));
-
-                //    var issuer = this.HttpContext.GetIdentityServerIssuerUri();
-                //    var token = new Token(OidcConstants.TokenTypes.AccessToken)
-                //    {
-                //        Audiences = { issuer }, // .EnsureTrailingSlash()
-                //        Issuer = issuer,
-                //        Lifetime = client.AccessTokenLifetime,
-                //        Claims = claims.Distinct(new ClaimComparer()).ToList(),
-                //        ClientId = client.ClientId,
-                //        AccessTokenType = client.AccessTokenType
-                //    };
-
-                //    ITokenService tokenService = this.serviceProvider.GetRequiredService<ITokenService>();
-                //    var securityToken = await tokenService.CreateSecurityTokenAsync(token);
-                //    ViewBag.AccessToken = securityToken;
             }
             else
             {
@@ -148,28 +81,35 @@ namespace Webapp.Controllers
                 };
             }
 
-            this.ViewBag.UserModel = userModel;
-            return View();
+            dynamic data = new { sessionId = this.sessionId, xsrfToken = tokens.RequestToken, isAuthenticated = this.User.Identity.IsAuthenticated, userModel = userModel };
+            var renderResult = await this.spaPrerenderer.RenderToString("ClientApp/dist/main-server", null, data, 30000);
+            if (!string.IsNullOrEmpty(renderResult.RedirectUrl))
+            {
+                if (renderResult.StatusCode != null && renderResult.StatusCode.Value == 301)
+                {
+                    return RedirectPermanent(renderResult.RedirectUrl);
+                }
+                return Redirect(renderResult.RedirectUrl);
+            }
+            if (renderResult.StatusCode != null)
+            {
+                this.HttpContext.Response.StatusCode = renderResult.StatusCode.Value;
+            }
+
+            return View("Index", renderResult);
         }
 
         // Used after login/logout
         [HttpGet, Route("~/xsrfrefresh")]
+        [ProducesResponseType(typeof(ApiModel<XsrfModel>), 200)]
+        [ProducesResponseType(typeof(ApiModel<XsrfModel>), 400)]
         public ActionResult XsrfRefresh()
         {
             var tokens = this.antiForgery.GetAndStoreTokens(this.HttpContext);
-            if (!string.IsNullOrWhiteSpace(tokens.RequestToken))
-            {
-                // we send the cookie in a readable form to the browser, where it can be read 
-                // by script coming from our own domain, and put in the clientside store
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = false,
-                    Secure = this.Request.IsHttps
-                };
-                this.Response.Cookies.Append(Constants.AntiForgeryCookieName, tokens.RequestToken, cookieOptions);
-            }
+            if (string.IsNullOrWhiteSpace(tokens.RequestToken))
+                return BadRequest(ApiModel.AsError(new XsrfModel { XsrfToken = null }, "Error getting XSRF token"));
 
-            return Ok();
+            return Ok(ApiModel.AsSuccess(new XsrfModel { XsrfToken = tokens.RequestToken }));
         }
 
 
@@ -180,28 +120,67 @@ namespace Webapp.Controllers
 
 
         [HttpPost("~/subscribe")]
+        [ProducesResponseType(typeof(ApiModel<SubscribeModel>), 200)]
+        [ProducesResponseType(typeof(ApiModel<SubscribeModel>), 400)]
+        [ValidateAntiForgeryToken]
         public async Task<ActionResult> Subscribe([FromForm] SubscribeModel model)
         {
             // this.ValidateCsrfToken();
             if (!this.ModelState.IsValid)
-            {
-                return BadRequest(new FormResponse { Message = string.Join(", ", this.ModelState.Values.SelectMany(v => v.Errors).Select(error => error.ErrorMessage)), Result = this.ModelState.AsApiResult() });
-            }
+                return BadRequest(this.ModelState.AsApiModel(model));
+
             try
             {
-                var emailGrain = this.grainClient.GetGrain<IEmailGrain>(0);
-                await emailGrain.SendEmail(new Email {
-                            To = new List<string> { "maarten@sikkema.com" },
-                            MessageBody = $"<p>Keep me informed: {model.Email}</p>",
-                            Subject = $"Testing: subscriber request for {model.Email}",
-                        });
+                var emailGrain = this.clusterClient.GetGrain<IEmailGrain>(0);
+                await emailGrain.SendEmail(
+                    new Email
+                    {
+                        To = new List<string> { "rrod@example.com" },
+                        MessageBody = $"<p>Keep me informed: {model.Email}</p>",
+                        Subject = $"Subscriber request: {model.Email}",
+                    });
 
-                return Ok(new FormResponse { Message = "Geregistreerd!", Result = ApiResult.AsSuccess() });
+                return Ok(ApiModel.AsSuccess(model, "Registered!"));
             }
             catch (Exception e)
             {
-                var result = new FormResponse { Result = ApiResult.AsException(e, includeExceptions: true), Message = "An Error occurred :-(" };
-                return BadRequest(result);
+                this.logger.LogError(e, $"An Exception of type {e.GetType().ToString()}: \"{e.Message}\" occurred in /subscribe.\r\n{e.StackTrace}");
+                return StatusCode(StatusCodes.Status500InternalServerError, ApiModel.FromException(model, e, includeExceptions: this.env.IsDevelopment()));
+            }
+        }
+
+        /// <summary>
+        /// Contact form handler. Takes Form imput and returns a redirect on sucess, to make it work without javascript
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [HttpPost("~/contact")]
+        [ProducesResponseType(typeof(ApiModel<ContactModel>), 302)]
+        [ProducesResponseType(typeof(ApiModel<ContactModel>), 400)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Contact([FromForm] ContactModel model)
+        {
+            if (!this.ModelState.IsValid) // it should be possible to do a complete server render of form including the error...
+                return BadRequest(this.ModelState.AsApiModel(model));
+
+            try
+            {
+                var message = $"<h2>Contact request: {model.FirstName} {model.LastName}</h2><p>Name: {model.FirstName} {model.LastName}</p><p>Email: {model.Email}</p><p>Phone: {model.Phone}</p><p>Message: {model.Message}</p>";
+                var emailGrain = this.clusterClient.GetGrain<IEmailGrain>(0);
+                await emailGrain.SendEmail(
+                    new Email
+                    {
+                        To = new List<string> { "rrod@example.com" },
+                        MessageBody = message,
+                        Subject = $"Contact request: {model.Email}",
+                    });
+
+                return Ok(ApiModel.AsSuccess<ContactModel>(model, "Message received"));
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError(e, $"An Exception of type {e.GetType().ToString()}: \"{e.Message}\" occurred in /subscribe.\r\n{e.StackTrace}");
+                return StatusCode(StatusCodes.Status500InternalServerError, ApiModel.FromException(model, e, includeExceptions: this.env.IsDevelopment()));
             }
         }
     }

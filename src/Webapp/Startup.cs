@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans;
@@ -62,8 +63,9 @@ namespace Webapp
 
             services.AddAntiforgery(options =>
             {
-                // options.CookieName = "XSRF-TOKEN";
+                options.Cookie.Name = "XSRF-TOKEN";
                 options.HeaderName = "X-XSRF-TOKEN";
+                options.FormFieldName = "requestVerificationToken";
             });
 
             services.AddAuthorization(options =>
@@ -142,6 +144,8 @@ namespace Webapp
                 };
             });
 
+            services.AddSpaPrerenderer();
+
             services.AddNodeServices(options =>
             {
                 if (this.env.IsDevelopment())
@@ -152,14 +156,7 @@ namespace Webapp
                 options.NodeInstanceOutputLogger = this.loggerFactory.CreateLogger("Node Console Logger");
             });
 
-            services.AddSignalR(options =>
-            {
-                options.JsonSerializerSettings = new JsonSerializerSettings()
-                {
-                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                    NullValueHandling = NullValueHandling.Ignore,
-                };
-            });
+            services.AddSignalR();
 
             // Add framework services.
             services
@@ -206,7 +203,7 @@ namespace Webapp
 
             app.UseSignalR(routes =>
             {
-                routes.MapHub<ActionsHub>("actionsr");
+                routes.MapHub<ActionsHub>("/actionsr");
             });
 
             app.UseMvc(routes =>

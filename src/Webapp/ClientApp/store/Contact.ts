@@ -1,20 +1,23 @@
 ﻿import { fetch } from 'domain-task';
 import { Action, Reducer, ActionCreator } from 'redux';
 import { AppThunkAction } from './';
+import { ContactModel } from '../server/Contact'
+import { push } from 'react-router-redux';
+import { ApiModel } from '../server/ApiModel';
 
 // -----------------
 // STATE - This defines the type of data maintained in the Redux store.
 
-export interface ContactForm {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-    message?: string;
-}
+//export interface ContactModel {
+//    firstName?: string;
+//    lastName?: string;
+//    email?: string;
+//    phone?: string;
+//    message?: string;
+//}
 
 export interface ContactState {
-    form: ContactForm;
+    form: ContactModel;
     isSubmitting: boolean;
     submitted: boolean;
     result?: string;
@@ -26,7 +29,7 @@ export interface ContactState {
 
 interface SubmitContactFormAction {
     type: 'SUBMIT_CONTACT_FORM'
-    payload: ContactForm
+    payload: ContactModel
 }
 
 interface ContactFormRecievedAction {
@@ -39,7 +42,7 @@ interface ContactFormRecievedAction {
 interface ContactFormErrorAction {
     type: 'CONTACT_FORM_ERROR',
     payload: {
-        form: ContactForm,
+        form: ContactModel,
         result: string;
     }
 }
@@ -54,27 +57,46 @@ type KnownAction = SubmitContactFormAction | ContactFormRecievedAction | Contact
 
 export const actionCreators = {
 
-    submitContactForm: (form: ContactForm): AppThunkAction<KnownAction> => async (dispatch, getState) => {
-        dispatch({ type: 'SUBMIT_CONTACT_FORM', payload: form });
-        let response = await fetch('/contact', {
-            method: 'POST',
-            body: JSON.stringify(form),
-            headers: new Headers({
-                'Content-Type': 'application/json'
-            })
-        });
-        let data = await response.json();
-        if (data.result.status === "OK")
-            dispatch({ type: 'CONTACT_FORM_RECIEVED', payload: { result: data.message } });
-        else
-            dispatch({ type: 'CONTACT_FORM_ERROR', payload: { form: form, result: data.message } });
+    submitContactForm: (form: ContactModel) => (dispatch, getState) => {
+        return (async () => {
+            dispatch({ type: 'SUBMIT_CONTACT_FORM', payload: form });
+            const xsrf = getState().xsrf.token;
+            const formData = Object.entries(form).map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join('&');
+            const response: Response = await fetch('/contact', {
+                method: 'POST',
+                credentials: 'include',
+                redirect: 'error',
+                headers: new Headers({
+                    'X-XSRF-TOKEN': xsrf,
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+                }),
+                body: formData
+            });
+            try {
+                const data = await response.json() as ApiModel<ContactModel>;
+                if (data.result.status === "OK") {
+                    dispatch({ type: 'CONTACT_FORM_RECIEVED', payload: { form: data.value, result: data.result.message } });
+
+                    setTimeout(() => {
+                        dispatch(push('/'));
+                        dispatch({ type: 'RESET_CONTACT_FORM' });
+                    }, 2000);
+                }
+                else {
+                    dispatch({ type: 'CONTACT_FORM_ERROR', payload: { form, errors: data.result.errors, result: data.result.message } });
+                }
+            } catch (error) {
+                dispatch({ type: 'CONTACT_FORM_ERROR', payload: { form, result: response.statusText || error } });
+            }
+
+        })();
     }
 };
 
 // ----------------
 // REDUCER - For a given state and action, returns the new state. To support time travel, this must not mutate the old state.
 
-const unloadedState: ContactState = { isSubmitting: false, submitted: false, form: {} };
+const unloadedState: ContactState = { isSubmitting: false, submitted: false, form: { email: '' } };
 
 export const reducer: Reducer<ContactState> = (state: ContactState, action: KnownAction) => {
     switch (action.type) {

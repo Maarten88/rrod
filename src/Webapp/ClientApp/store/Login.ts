@@ -1,11 +1,11 @@
 ﻿import { fetch } from 'domain-task';
 import { Action, Reducer } from 'redux';
-import { LoginInputModel } from '../server/LoginInputModel';
-import { LoginResponseModel } from '../server/LoginResponseModel';
+import { LoginModel } from '../server/LoginModel';
 import { AppThunkAction } from './';
 import * as Cookies from 'js-cookie';
 import { actionCreators as XsrfActionCreators } from './Xsrf';
 import { push } from 'react-router-redux';
+import { ApiModel } from 'ClientApp/server/ApiModel';
 
 // -----------------
 // STATE - This defines the type of data maintained in the Redux store.
@@ -13,6 +13,7 @@ import { push } from 'react-router-redux';
 export interface LoginState {
     loggedin: boolean;
     userId?: string;
+    loginError?: string;
     userName?: string;
     imageUrl?: string;
 }
@@ -23,10 +24,11 @@ export interface LoginState {
 // Use @typeName and isActionType for type detection that works even after serialization/deserialization.
 
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
+export const LOGOUT_SUCCESS = 'LOGOUT_SUCCESS';
 
 interface StartLoginAction      { type: 'START_LOGIN' }
 interface LoginSuccessAction    { type: 'LOGIN_SUCCESS' }
-interface LoginFailedAction     { type: 'LOGIN_FAILED' }
+interface LoginFailedAction     { type: 'LOGIN_FAILED', payload: { error: string }  }
 interface StartLogoutAction     { type: 'START_LOGOUT' }
 interface LogoutSuccessAction   { type: 'LOGOUT_SUCCESS' }
 interface LogoutFailedAction    { type: 'LOGOUT_FAILED' }
@@ -42,113 +44,71 @@ type KnownAction = | StartLoginAction | LoginSuccessAction | LoginFailedAction |
 
 export const actionCreators = {
     // login: () => <LoginAction>{ type: 'START_LOGIN' },
-    loginSuccess: () => (dispatch, getState) => {
-        return (async () => {
-            // Get updated xsrf token
-            await dispatch(XsrfActionCreators.refresh());
-            // Get updated menu; we may get extra options based on our role
-            // dispatch(NavMenuActionCreators.fetchMenu());
-    
-            dispatch({ type: 'LOGIN_SUCCESS' });
-            
-            // Navigate home -- we'll do that with a Redirect component render
-            // dispatch(push('/'));
-        })();
-    },
-    startLogin: (loginInput: LoginInputModel) => (dispatch, getState) => {
-        dispatch({ type: 'START_LOGIN' });
+    login: (loginInput: LoginModel) => (dispatch, getState) => {
 
         return (async () => {
-            var xsrf = getState().xsrf.token;
-            let response = <Response>await fetch('/account/login', {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': xsrf
-                },
-                body: JSON.stringify(loginInput)
-            });
+            dispatch({ type: 'START_LOGIN' });
 
-            if (response.ok) {
-                await dispatch(actionCreators.loginSuccess());
-            } else {
-                // TODO: display error
-                dispatch({ type: 'LOGIN_FAILED' });
+            try {
+
+                const xsrf = getState().xsrf.token;
+                const response = <Response>await fetch('/account/login', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: new Headers({
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': xsrf
+                    }),
+                    body: JSON.stringify(loginInput)
+                });
+
+                if (response.ok) {
+                    // Get updated xsrf token
+                    dispatch(XsrfActionCreators.refresh());
+                    // Get updated menu; we may get extra options based on our role
+                    // dispatch(NavMenuActionCreators.fetchMenu());
+                    // will redirect
+                    dispatch({ type: 'LOGIN_SUCCESS' });
+
+                    dispatch(push(loginInput.returnUrl || '/'));
+                } else {
+                    const model: ApiModel<LoginModel> = await response.json();
+                    dispatch({ type: 'LOGIN_FAILED', payload: { error: model.result.message || "Login failed" } });
+                }
+            }
+            catch (e) {
+                dispatch({ type: 'LOGIN_FAILED', payload: { error: e.message || "Login error" } });
             }
         })();
     },
     logout: () => (dispatch, getState) => {
-
-        dispatch({ type: 'START_LOGOUT' });
-
         return (async () => {
+            dispatch({ type: 'START_LOGOUT' });
+
             var xsrf = getState().xsrf.token;
             let response = <Response>await fetch('/account/logout', {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
+                headers: new Headers({
                     'X-XSRF-TOKEN': xsrf
-                }
+                })
             });
 
             if (response.ok) {
-                // Get updated xsrf token. this actioncreator returns a promise, so we can await the call
-                await dispatch(XsrfActionCreators.refresh());
-                
-                // wait a second to see the transition
-                await new Promise(resolve => setTimeout(() => resolve(), 1000));
-
-                dispatch({ type: 'LOGOUT_SUCCESS' });
+                // Get updated xsrf token
+                dispatch(XsrfActionCreators.refresh());
                 // Get updated menu; we may get extra options based on our role
                 // dispatch(NavMenuActionCreators.fetchMenu());
                 // dispatch(push('/'));
+                dispatch({ type: 'LOGOUT_SUCCESS' });
+
+                dispatch(push('/'));
+
             } else {
                 dispatch({ type: 'LOGOUT_FAILED' });
             }
         })();
     }
-
-    //login: (uid: string, pwd: string) => async (dispatch, getState) => {
-
-    //    dispatch({ type: 'START_LOGIN' });
-    //    var data = {
-    //        username: uid,
-    //        password: pwd,
-    //        client_id: "https://projectatenta.local/",
-    //        client_secret: "secret_secret_secret",
-    //        // redirect_uri: "https://projectatenta.local/signin-oidc",
-    //        grant_type: "password",
-    //        // specify the resource, to match the audience in the jwt bearer middleware
-    //        resource: "https://account.projectatenta.local/",
-    //        // offline_access: indicate refresh token is required
-    //        // profile: include custom fields
-    //        // email: include email address
-    //        scope: "offline_access profile email"
-    //    };
-    //    var body = "";
-    //    for (var key in data) {
-    //        if (body.length) {
-    //            body += "&";
-    //        }
-    //        body += key + "=";
-    //        body += encodeURIComponent(data[key]);
-    //    }
-
-    //    let response = await fetch('https://account.projectatenta.local/connect/token', {
-    //        method: 'POST',
-    //        body: body,
-    //        headers: new Headers({
-    //            'Content-Type': 'application/x-www-form-urlencoded'
-    //        })
-    //    });
-    //    if (response.ok) {
-    //        let json = await response.json();
-    //        let token = decodeToken(json.access_token);
-    //        dispatch({ type: 'LOGGEDIN', userId: token.uid, userName: token.unique_name });
-    //    }
-    //},
-    // logout: () => <StartLogoutAction>{ type: 'LOGOUT' }
 };
 
 // ----------------
@@ -161,7 +121,7 @@ export const reducer: Reducer<LoginState> = (state: LoginState, action: KnownAct
         case 'LOGIN_SUCCESS':
             return { loggedin: true };
         case 'LOGIN_FAILED':
-            return { loggedin: false };
+            return { ...state, loggedIn: false, loginError: action.payload.error };
         case 'START_LOGOUT':
             return { loggedin: true };
         case 'LOGOUT_SUCCESS':

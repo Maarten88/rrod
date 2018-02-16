@@ -6,41 +6,68 @@
 export interface Observer<T> {
     closed?: boolean;
     next: (value: T) => void;
-    error: (err: any) => void;
-    complete: () => void;
+    error?: (err: any) => void;
+    complete?: () => void;
+}
+
+export class Subscription<T> {
+    private subject: Subject<T>;
+    private observer: Observer<T>;
+
+    constructor(subject: Subject<T>, observer: Observer<T>) {
+        this.subject = subject;
+        this.observer = observer;
+    }
+
+    public dispose(): void {
+        const index: number = this.subject.observers.indexOf(this.observer);
+        if (index > -1) {
+            this.subject.observers.splice(index, 1);
+        }
+
+        if (this.subject.observers.length === 0) {
+            this.subject.cancelCallback().catch((_) => { });
+        }
+    }
 }
 
 export interface Observable<T> {
-    // TODO: Return a Subscription so the caller can unsubscribe? IDisposable in System.IObservable
-    subscribe(observer: Observer<T>): void;
+    subscribe(observer: Observer<T>): Subscription<T>;
 }
 
 export class Subject<T> implements Observable<T> {
-    observers: Observer<T>[];
+    public observers: Array<Observer<T>>;
+    public cancelCallback: () => Promise<void>;
 
-    constructor() {
+    constructor(cancelCallback: () => Promise<void>) {
         this.observers = [];
+        this.cancelCallback = cancelCallback;
     }
 
     public next(item: T): void {
-        for (let observer of this.observers) {
+        for (const observer of this.observers) {
             observer.next(item);
         }
     }
 
     public error(err: any): void {
-        for (let observer of this.observers) {
-            observer.error(err);
+        for (const observer of this.observers) {
+            if (observer.error) {
+                observer.error(err);
+            }
         }
     }
 
     public complete(): void {
-        for (let observer of this.observers) {
-            observer.complete();
+        for (const observer of this.observers) {
+            if (observer.complete) {
+                observer.complete();
+            }
         }
     }
 
-    public subscribe(observer: Observer<T>): void {
+    public subscribe(observer: Observer<T>): Subscription<T> {
         this.observers.push(observer);
+        return new Subscription(this, observer);
     }
 }

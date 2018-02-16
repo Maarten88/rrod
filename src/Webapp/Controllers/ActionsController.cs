@@ -45,7 +45,7 @@ namespace Webapp.Controllers
             }
             catch (Exception e)
             {
-                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+                return StatusCode(500, ApiResult.FromException(e, env.IsDevelopment()));
             }
         }
 
@@ -81,7 +81,7 @@ namespace Webapp.Controllers
             }
             catch (Exception e)
             {
-                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+                return StatusCode(500, ApiResult.FromException(e, env.IsDevelopment()));
             }
         }
 
@@ -97,7 +97,7 @@ namespace Webapp.Controllers
             }
             catch (Exception e)
             {
-                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+                return StatusCode(500, ApiResult.FromException(e, env.IsDevelopment()));
             }
         }
 
@@ -112,7 +112,7 @@ namespace Webapp.Controllers
             }
             catch (Exception e)
             {
-                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+                return StatusCode(500, ApiResult.FromException(e, env.IsDevelopment()));
             }
             
         }
@@ -128,7 +128,7 @@ namespace Webapp.Controllers
             }
             catch (Exception e)
             {
-                return StatusCode(500, ApiResult.AsException(e, env.IsDevelopment()));
+                return StatusCode(500, ApiResult.FromException(e, env.IsDevelopment()));
             }
         }
     }

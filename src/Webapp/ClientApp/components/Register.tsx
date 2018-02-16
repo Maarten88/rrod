@@ -5,17 +5,17 @@ import { Grid, Row, Col, Well, Panel, PanelGroup, Button, FormGroup, Form, Contr
 import { ApplicationState } from '../store/index';
 import * as RegisterStore from '../store/Register';
 import Footer from './Footer';
-import { RegisterViewModel } from '../server/RegisterViewModel'
+import { RegisterModel } from '../server/RegisterModel'
 
 type RegisterProps = RegisterStore.RegisterState & typeof RegisterStore.actionCreators & RouteComponentProps<{}>;
 
-const initialForm: RegisterViewModel = {
+const initialForm: RegisterModel = {
     email: '',
     password: '',
     confirmPassword: ''
 }
 
-class Register extends React.Component<RegisterProps, RegisterViewModel> {
+class Register extends React.Component<RegisterProps, RegisterModel> {
 
     constructor(props: RegisterProps) {
         super(props);

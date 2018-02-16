@@ -1,9 +1,13 @@
 ﻿// This file was generated from the Models.tst template
 //
 
-import { ApiModel } from './ApiModel';
 
-export class LoginResponseModel  extends ApiModel { 
+
+export class LoginModel  { 
+    email: string;
+    password: string;
+    rememberLogin?: boolean;
+    returnUrl?: string;
     isLockedOut?: boolean;
     requiresTwoFactor?: boolean;
     isNotAllowed?: boolean;

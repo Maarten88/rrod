@@ -19,7 +19,7 @@
     string Imports(Class c)
     {
         List<string> neededImports = c.Properties
-	        .Where(p => !p.Type.IsPrimitive && p.Type.Name.TrimEnd('[',']') != c.Name)
+	        .Where(p => !p.Type.IsPrimitive && !c.TypeArguments.Any(arg => arg.Name == p.Type.Name) && p.Type.Name.TrimEnd('[',']') != c.Name)
 	        .Select(p => "import { " + p.Type.Name.TrimEnd('[',']') + " } from './" + p.Type.Name.TrimEnd('[',']') + "';").ToList();
         if (c.BaseClass != null)
         { 

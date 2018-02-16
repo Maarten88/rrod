@@ -4,9 +4,8 @@ using System.ComponentModel.DataAnnotations;
 namespace Webapp.Models
 {
     [JsonObject]
-    public class SubscribeModel
+    public class XsrfModel
     {
-        [EmailAddress, Required]
-        public string Email { get; set; }
+        public string XsrfToken { get; set; }
     }
 }

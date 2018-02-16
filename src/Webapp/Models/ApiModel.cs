@@ -1,52 +1,74 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Webapp.Models
 {
-    [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
-    public class ApiModel
+    [JsonObject]
+    public class ApiModel<TValue> where TValue : class
     {
-        [JsonProperty]
         public ApiResult Result { get; set; }
 
-        public ApiModel()
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public TValue Value { get; private set; }
+
+        public ApiModel(TValue val)
         {
+            this.Value = val;
+            this.Result = ApiResult.SuccessResult;
         }
-        public ApiModel(ApiResult result)
+        public ApiModel(TValue val, ApiResult result)
         {
             this.Result = result;
+            this.Value = val;
         }
         public ApiModel(Exception e, bool includeExceptions)
         {
-            this.Result = ApiResult.AsException(e, includeExceptions);
-        }
-        public ApiModel(AggregateException e, bool includeExceptions)
-        {
-            this.Result = ApiResult.AsException(e, includeExceptions);
+            this.Result = ApiResult.FromException(e, includeExceptions);
         }
 
         // Helpers
-        public static ApiModel AsError(string errorField, string errorMessage)
+        public static ApiModel<TValue> AsError(string errorField, string errorMessage)
         {
-            return new ApiModel(ApiResult.AsError(errorField, errorMessage));
+            return new ApiModel<TValue>(null, ApiResult.AsError(errorField, errorMessage));
         }
-        public static ApiModel AsError(string errorMessage, int errorCode = 0)
+        public static ApiModel<TValue> AsError(string errorMessage, int errorCode = 0)
         {
-            return new ApiModel(ApiResult.AsError(errorMessage, errorCode));
+            return new ApiModel<TValue>(null, ApiResult.AsError(errorMessage, errorCode));
         }
-        public static ApiModel AsSuccess(string message = null)
+        public static ApiModel<TValue> AsError(string errorMessage, TValue val)
         {
-            return new ApiModel(ApiResult.AsSuccess(message));
+            return new ApiModel<TValue>(val, ApiResult.AsError(errorMessage));
+        }
+        public static ApiModel<TValue> AsSuccess(TValue val, string message = null)
+        {
+            return new ApiModel<TValue>(val, ApiResult.AsSuccess(message));
         }
 
-        public static ApiModel AsException(Exception exception, bool includeExceptions = false)
+        public static ApiModel<TValue> FromException(Exception exception, bool includeExceptions = false)
         {
-            return new ApiModel(ApiResult.AsException(exception, includeExceptions));
+            return new ApiModel<TValue>(null, ApiResult.FromException(exception, includeExceptions));
         }
+    }
 
-        public static ApiModel AsException(AggregateException exception, bool includeExceptions = false)
+    public partial class ApiModel
+    {
+        public static ApiModel<TValue> AsSuccess<TValue>(TValue val, string message = null) where TValue : class
         {
-            return new ApiModel(ApiResult.AsException(exception, includeExceptions));
+            return new ApiModel<TValue>(val, ApiResult.AsSuccess(message));
+        }
+        public static ApiModel<TValue> AsError<TValue>(TValue val, string message = null) where TValue : class
+        {
+            return new ApiModel<TValue>(val, ApiResult.AsError(message));
+        }
+        public static ApiModel<TValue> FromException<TValue>(TValue val, Exception e, bool includeExceptions = false) where TValue : class
+        {
+            return new ApiModel<TValue>(val, ApiResult.FromException(e, includeExceptions));
         }
     }
 }
+

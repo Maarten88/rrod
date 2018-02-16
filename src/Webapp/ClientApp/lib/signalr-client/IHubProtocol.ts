@@ -3,26 +3,45 @@
 
 export const enum MessageType {
     Invocation = 1,
-    Result,
-    Completion
+    StreamItem = 2,
+    Completion = 3,
+    StreamInvocation = 4,
+    CancelInvocation = 5,
+    Ping = 6,
 }
 
-export interface HubMessage {
+export interface MessageHeaders { [key: string]: string; }
+
+export type HubMessage = InvocationMessage | StreamInvocationMessage | StreamItemMessage | CompletionMessage | CancelInvocationMessage | PingMessage;
+
+export interface HubMessageBase {
     readonly type: MessageType;
-    readonly invocationId: string;
 }
 
-export interface InvocationMessage extends HubMessage {
+export interface HubInvocationMessage extends HubMessageBase {
+    readonly headers?: MessageHeaders;
+    readonly invocationId?: string;
+}
+
+export interface InvocationMessage extends HubInvocationMessage {
+    readonly type: MessageType.Invocation;
     readonly target: string;
-    readonly arguments: Array<any>;
-    readonly nonblocking?: boolean;
+    readonly arguments: any[];
 }
 
-export interface ResultMessage extends HubMessage {
+export interface StreamInvocationMessage extends HubInvocationMessage {
+    readonly type: MessageType.StreamInvocation;
+    readonly target: string;
+    readonly arguments: any[];
+}
+
+export interface StreamItemMessage extends HubInvocationMessage {
+    readonly type: MessageType.StreamItem;
     readonly item?: any;
 }
 
-export interface CompletionMessage extends HubMessage {
+export interface CompletionMessage extends HubInvocationMessage {
+    readonly type: MessageType.Completion;
     readonly error?: string;
     readonly result?: any;
 }
@@ -31,9 +50,17 @@ export interface NegotiationMessage {
     readonly protocol: string;
 }
 
+export interface PingMessage extends HubInvocationMessage {
+    readonly type: MessageType.Ping;
+}
+
+export interface CancelInvocationMessage extends HubInvocationMessage {
+    readonly type: MessageType.CancelInvocation;
+}
+
 export const enum ProtocolType {
     Text = 1,
-    Binary
+    Binary,
 }
 
 export interface IHubProtocol {

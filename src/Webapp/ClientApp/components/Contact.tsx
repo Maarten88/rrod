@@ -3,10 +3,12 @@ import { connect } from 'react-redux';
 import { Grid, Row, Col, Well, Panel, PanelGroup, Button, FormGroup, Form, ControlLabel, FormControl, HelpBlock } from 'react-bootstrap';
 import { ApplicationState } from '../store';
 import * as ContactStore from '../store/Contact';
+import { ContactModel } from '../server/Contact';
+import { HeadTag } from '../lib/react-head';
 
-type ContactProps = ContactStore.ContactState & typeof ContactStore.actionCreators;
+type ContactProps = ContactStore.ContactState & { xsrfToken: string } & typeof ContactStore.actionCreators;
 
-const initialForm: ContactStore.ContactForm = {
+const initialForm: ContactModel = {
     firstName: '',
     lastName: '',
     email: '',
@@ -14,7 +16,7 @@ const initialForm: ContactStore.ContactForm = {
     message: ''
 }
 
-class Contact extends React.Component<ContactProps, ContactStore.ContactForm> {
+class Contact extends React.Component<ContactProps, ContactModel> {
 
     constructor(props: ContactProps) {
         super(props);
@@ -38,11 +40,15 @@ class Contact extends React.Component<ContactProps, ContactStore.ContactForm> {
 
     public render() {
         return <Grid>
+            <HeadTag key="title" tag="title">RROD - Contact</HeadTag>
+            <HeadTag key="meta:description" tag="meta" name="description" content="Contact page. This shows a universal webform" />
+            
             <h1>Contact us</h1>
             <Row>
                 <Col md={6}>
                     <Well bsSize="sm">
-                        <Form horizontal onSubmit={this.submit}>
+                        <Form horizontal method="post" onSubmit={this.submit}>
+                            <input type="hidden" name="requestVerificationToken" defaultValue={this.props.xsrfToken} />
                             <fieldset>
                                 <legend className="text-center header">Contact</legend>
                                 <FormGroup>
@@ -118,6 +124,8 @@ class Contact extends React.Component<ContactProps, ContactStore.ContactForm> {
 }
 
 export default connect(
-    (state: ApplicationState) => state.contact, // Selects which state properties are merged into the component's props
-    ContactStore.actionCreators                 // Selects which action creators are merged into the component's props
+    (state: ApplicationState) => {
+        return { ...state.contact, xsrfToken: state.xsrf.token }
+    }, 
+    ContactStore.actionCreators
 )(Contact);

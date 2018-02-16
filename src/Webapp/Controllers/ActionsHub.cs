@@ -47,7 +47,7 @@ namespace Webapp
                     {
                         // Cast it to Redux Javascript format. The ActionName method is mirrored in the Typewriter Redux template, so typescript knows the same string constants
                         object jsAction = new { type = action.GetType().Name, payload = action };
-                        await client.InvokeAsync("action", jsAction);
+                        await client.SendAsync("action", jsAction);
                     }
                     catch (Exception e)
                     {

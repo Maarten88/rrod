@@ -1,22 +1,5 @@
+@model Microsoft.AspNetCore.SpaServices.Prerendering.RenderToStringResult
 @{
-    ViewData["Title"] = "Home Page";
-    dynamic data = new { sessionId = ViewBag.SessionId, accessToken = ViewBag.AccessToken, xsrfToken = ViewBag.AntiForgeryRequestToken, isAuthenticated = this.User.Identity.IsAuthenticated, userModel = ViewBag.UserModel };
-}
-
-@* Save the request token in a div. CORS needs to make sure this token can't be read by javascript from other sources than ours *@
-<div id="xsrf-token" data-xsrf-token="@ViewBag.AntiForgeryRequestToken"></div>
-<div id="access-token" data-access-token="@ViewBag.accessToken"></div>
-
-<environment names="Development">
-    <div id="react-app" asp-prerender-module="ClientApp/dist/main-server" asp-prerender-data=data>Loading...</div>
-</environment>
-<environment names="Staging,Production">
-    <cache expires-after="@TimeSpan.FromMinutes(10)" vary-by-user="true" vary-by="@this.Context.Request.Path">
-        <div id="react-app" asp-prerender-module="ClientApp/dist/main-server" asp-prerender-data=data>Loading...</div>
-    </cache>
-</environment>
-
-@section scripts {
-    <script src="~/dist/vendor.js" asp-append-version="true"></script>
-    <script src="~/dist/main-client.js" asp-append-version="true"></script>
-}
+    Layout = null;
+}<!DOCTYPE html>
+@Html.Raw(Model.Html)

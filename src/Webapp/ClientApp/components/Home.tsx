@@ -4,10 +4,13 @@ import * as Scroll from 'react-scroll';
 import ScrollEffect from '../lib/scroll-effect';
 import Fullscreen from '../lib/fullscreen';
 import Footer from './Footer';
+import { HeadTag } from '../lib/react-head';
 
 export default class Home extends React.Component<{}> {
     public render() {
         return <div className="container-fluid">
+            <HeadTag key="title" tag="title">RROD - React, Redux, Orleans and Dotnet Demo</HeadTag>
+            <HeadTag key="meta:description" tag="meta" name="description" content="An exploration into modern web architecture with Dotnet Core, Javascript, and a backend that implements Event Sourcing using the Actor model" />
             <Scroll.Element name="top" />
             <Fullscreen>
                 <div className="row" id="hero">

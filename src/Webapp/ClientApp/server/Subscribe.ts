@@ -7,9 +7,3 @@ export class SubscribeModel  {
     email: string;
 }
 
-import { ApiModel } from './ApiModel';
-
-export class FormResponse  extends ApiModel { 
-    message: string;
-}
-

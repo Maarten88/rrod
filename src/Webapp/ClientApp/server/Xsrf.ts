@@ -3,6 +3,7 @@
 
 
 
-export class LoginInputModel  { 
+export class XsrfModel  { 
+    xsrfToken: string;
 }
 
