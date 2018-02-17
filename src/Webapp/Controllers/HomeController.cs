@@ -27,7 +27,6 @@ namespace Webapp.Controllers
     // The home controller generates the initial home page, as wel as the aspnet-javascript serverside fallback pages (mostly for seo)
     public class HomeController : Controller
     {
-        // readonly ITempDataProvider cookie;
         readonly IAntiforgery antiForgery;
         readonly Guid sessionId;
         readonly IServiceProvider serviceProvider;

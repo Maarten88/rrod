@@ -16,21 +16,16 @@ namespace Webapp
         private readonly IClusterClient grainClient;
         private readonly Guid sessionId;
 
-        public ActionsHub(IClusterClient grainClient, ITempDataProvider cookie, IHttpContextAccessor httpContextAccessor, ILogger<ActionsHub> logger)
+        public ActionsHub(IClusterClient grainClient, IHttpContextAccessor httpContextAccessor, ILogger<ActionsHub> logger)
         {
             this.grainClient = grainClient;
             this.logger = logger;
 
-            var data = cookie.LoadTempData(httpContextAccessor.HttpContext);
-            if (data.TryGetValue("session", out object id) && (id is Guid))
+            string sessionCookie = httpContextAccessor.HttpContext.Request.Cookies["SESSION"];
+            if (string.IsNullOrEmpty(sessionCookie) || !Guid.TryParse(sessionCookie, out this.sessionId))
             {
-                this.sessionId = (Guid)id;
-            }
-            else
-            {
-                // generate a new session id
-                data["session"] = this.sessionId = Guid.NewGuid();
-                cookie.SaveTempData(httpContextAccessor.HttpContext, data);
+                this.logger.LogError("SignalR Hub: unexpected request without expected 'SESSION' cookie. Session will not work!");
+                this.sessionId = Guid.NewGuid();
             }
         }
 

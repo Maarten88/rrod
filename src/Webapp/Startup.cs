@@ -42,12 +42,6 @@ namespace Webapp
             services.AddOptions();
             services.Configure<AcmeSettings>(this.configuration.GetSection(nameof(AcmeSettings)));
 
-            // TODO DotNetCore 2.0 configure the cookie name: https://github.com/aspnet/Mvc/commit/17dc23a024c1219ec58c48199f8d4f23117cf348
-            // services.Configure<CookieTempDataProviderOptions>(options => options.CookieName = "SESSION");
-
-            // Register service for session cookie (used in controller)
-            services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
-
             // Add a basic Orleans-based distributed cache
             services.AddOrleansCache();
 

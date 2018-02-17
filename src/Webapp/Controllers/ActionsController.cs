@@ -17,20 +17,15 @@ namespace Webapp.Controllers
         private readonly IClusterClient grainClient;
         private readonly IHostingEnvironment env;
 
-        public ActionsController(IClusterClient grainClient, ITempDataProvider cookie, IHttpContextAccessor httpContextAccessor, IHostingEnvironment env): base()
+        public ActionsController(IClusterClient grainClient, IHttpContextAccessor httpContextAccessor, IHostingEnvironment env): base()
         {
             this.grainClient = grainClient;
             this.env = env;
-            var data = cookie.LoadTempData(httpContextAccessor.HttpContext);
-            if (data.TryGetValue("session", out object id) && (id is Guid))
+            string sessionCookie = httpContextAccessor.HttpContext.Request.Cookies["SESSION"];
+            if (string.IsNullOrEmpty(sessionCookie) || !Guid.TryParse(sessionCookie, out this.sessionId))
             {
-                this.sessionId = (Guid)id;
-            }
-            else
-            {
-                // generate a new session id
-                data["session"] = this.sessionId = Guid.NewGuid();
-                cookie.SaveTempData(httpContextAccessor.HttpContext, data);
+                this.sessionId = Guid.NewGuid();
+                httpContextAccessor.HttpContext.Response.Cookies.Append("SESSION", this.sessionId.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow + TimeSpan.FromDays(365), HttpOnly = false, Secure = !this.env.IsDevelopment() });
             }
         }
 

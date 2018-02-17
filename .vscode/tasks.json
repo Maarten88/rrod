@@ -161,7 +161,7 @@
                 "5000:5000",
                 "--name",
                 "webapp.debug_1", 
-                "webapp.debug"
+                "webapp.debug:latest"
             ],
             "options": {
                 "cwd": "${workspaceRoot}"

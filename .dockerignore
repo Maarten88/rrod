@@ -10,5 +10,6 @@ global.json
 **/node_modules
 **/bin
 **/obj
+**/dist
 !obj/Docker/publish/*
 !obj/Docker/empty/
