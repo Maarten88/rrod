@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2-sdk
+FROM microsoft/dotnet:2.0-sdk
 ENV NUGET_XMLDOC_MODE skip
 WORKDIR /vsdbg
 RUN apt-get update \
@@ -14,7 +14,7 @@ WORKDIR /app
 COPY . .
 WORKDIR /app/src/Webapp
 RUN dotnet publish -c Debug -o out
-EXPOSE 5000
+EXPOSE 443 80
 
 # Kick off a container just to wait debugger to attach and run the app
 ENTRYPOINT ["/bin/bash", "-c", "sleep infinity"]

@@ -18,6 +18,7 @@ import { HeadCollector, HeadTag } from './lib/react-head';
 export default createServerRenderer(params => {
     return new Promise<RenderResult>((resolve, reject) => {
 
+        // console.log(`Node server: url = ${params.url}, origin=${params.origin}, baseUrl=${params.baseUrl}`);
         const store = configureStore(createMemoryHistory());
 
         // Prepare Redux store with in-memory history, and dispatch a navigation event

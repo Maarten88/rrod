@@ -62,9 +62,11 @@ namespace OrleansHost
             clusterConfig.Defaults.ProxyGatewayEndpoint = new IPEndPoint(IPAddress.Any, 30000);
             clusterConfig.Defaults.Port = 11111;
 
-            clusterConfig.AddMemoryStorageProvider("Default");
-            clusterConfig.AddMemoryStorageProvider("PubSubStore");
-            clusterConfig.AddSimpleMessageStreamProvider("Default");
+            clusterConfig.AddAzureTableStorageProvider("Default", config.GetConnectionString("DataConnectionString"));
+            // clusterConfig.AddMemoryStorageProvider("PubSubStore");
+            clusterConfig.AddAzureTableStorageProvider("PubSubStore", config.GetConnectionString("DataConnectionString"));
+            // clusterConfig.AddSimpleMessageStreamProvider("Default");
+            clusterConfig.AddAzureQueueStreamProviderV2("Default", config.GetConnectionString("DataConnectionString"), clusterId: config["ClusterId"]);
             var siloName = config["Id"];
 
             silo = new SiloHostBuilder()

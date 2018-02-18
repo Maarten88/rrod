@@ -49,7 +49,7 @@ namespace Webapp.Controllers
             if (string.IsNullOrEmpty(sessionCookie) || !Guid.TryParse(sessionCookie, out this.sessionId))
             {
                 this.sessionId = Guid.NewGuid();
-                httpContextAccessor.HttpContext.Response.Cookies.Append("SESSION", this.sessionId.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow + TimeSpan.FromDays(365), HttpOnly = false, Secure = !this.env.IsDevelopment() });
+                httpContextAccessor.HttpContext.Response.Cookies.Append("SESSION", this.sessionId.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow + TimeSpan.FromDays(365), HttpOnly = false, Secure = httpContextAccessor.HttpContext.Request.IsHttps });
             }
         }
 

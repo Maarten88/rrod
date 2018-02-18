@@ -182,6 +182,9 @@ module.exports = (env) => {
             ]
         },
         plugins: [
+            new webpack.NormalModuleReplacementPlugin(
+                /\/iconv-loader$/, 'node-noop',
+              )
         ],
         output: {
             libraryTarget: 'commonjs',

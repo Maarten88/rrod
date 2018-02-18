@@ -40,7 +40,7 @@
                 "-f",
                 "./src/OrleansHost/Dockerfile.debug", 
                 "-t",
-                "orleanshost.debug"
+                "orleanshost.debug:latest"
             ],
             "options": {
                 "cwd": "${workspaceRoot}"
@@ -56,9 +56,9 @@
                 "-f",
                 "./src/OrleansHost/Dockerfile", 
                 "-t",
-                "orleanshost",
+                "orleanshost:latest",
                 "-t",
-                "maarten.azurecr.io/rrod/orleanshost"
+                "maarten.azurecr.io/rrod/orleanshost:latest"
             ],
             "options": {
                 "cwd": "${workspaceRoot}"
@@ -75,7 +75,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Start OrleansHost - Docker",
+            "label": "Run OrleansHost - Docker Debug",
             "command": "docker",
             "args": [
                 "run",
@@ -86,7 +86,7 @@
                 "RROD_ConnectionStrings__ReduxConnectionString='${env:RROD_ConnectionStrings__DataConnectionString}'",
                 "--name",
                 "orleanshost.debug_1", 
-                "orleanshost.debug"
+                "orleanshost.debug:latest"
             ],
             "options": {
                 "cwd": "${workspaceRoot}"
@@ -94,7 +94,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Cleanup OrleansHost - Docker",
+            "label": "Remove OrleansHost - Docker Debug",
             "command": "docker",
             "args": [
                 "rm",
@@ -115,7 +115,7 @@
                 "-f",
                 "./src/Webapp/Dockerfile.debug", 
                 "-t",
-                "webapp.debug"
+                "webapp.debug:latest"
             ],
             "options": {
                 "cwd": "${workspaceRoot}"
@@ -131,9 +131,9 @@
                 "-f",
                 "./src/Webapp/Dockerfile", 
                 "-t",
-                "webapp",
+                "webapp:latest",
                 "-t",
-                "maarten.azurecr.io/rrod/webapp"
+                "maarten.azurecr.io/rrod/webapp:latest"
             ],
             "options": {
                 "cwd": "${workspaceRoot}"
@@ -143,14 +143,14 @@
         {
             "label": "Push Webapp to ACR",
             "command": "docker",
-            "args": ["push", "maarten.azurecr.io/rrod/webapp"],
+            "args": ["push", "maarten.azurecr.io/rrod/webapp:latest"],
             "options": {
                 "cwd": "${workspaceRoot}"
             },
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Start Webapp - Docker",
+            "label": "Run Webapp - Docker Debug",
             "command": "docker",
             "args": [
                 "run",
@@ -169,7 +169,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Cleanup Webapp - Docker",
+            "label": "Remove Webapp - Docker Debug",
             "command": "docker",
             "args": [
                 "rm",
@@ -182,7 +182,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Build OrleansHost",
+            "label": "Build OrleansHost - Local",
             "command": "dotnet",
             "args": [
                 "build"
@@ -194,7 +194,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Build Webapp",
+            "label": "Build Webapp - Local",
             "command": "dotnet",
             "args": [
                 "build"
@@ -206,8 +206,8 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "Run Webpack - Local",
             "command": "webpack",
-            "label": "Webpack",
             "group": "build",
             "problemMatcher": "$tsc",
             "options": {
@@ -215,10 +215,16 @@
             }
         },
         {
-            "label": "Build All",
-            "dependsOn": ["Build OrleansHost", "Build Webapp", "Webpack"],
+            "label": "Build All - Local",
+            "dependsOn": ["Build OrleansHost - Local", "Build Webapp - Local", "Run Webpack - Local"],
             "group": "build",
             "problemMatcher": ["$msCompile", "$tsc"]
-        }        
+        },
+        // {
+        //     "label": "Build All - Docker Debug",
+        //     "dependsOn": ["Build OrleansHost", "Build Webapp", "Webpack"],
+        //     "group": "build",
+        //     "problemMatcher": ["$msCompile", "$tsc"]
+        // }        
     ]
 }

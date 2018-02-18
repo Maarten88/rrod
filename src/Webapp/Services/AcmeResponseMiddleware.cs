@@ -17,12 +17,11 @@ namespace Webapp.Services
         public AcmeSettings()
         {
             AcmeUri = "https://acme-v01.api.letsencrypt.org/directory";
-            TermsOfServiceUri = "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf";
+            TermsOfServiceUri = "https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf";
         }
     }
 
     public class AcmeOptions {
-        public string[] DomainNames { get; set; }
         public AcmeSettings AcmeSettings { get; set; }
         // public IServiceProvider ApplicationServices { get; set; }
         public Func<string, Task<string>> GetChallengeResponse { get; set; } = (challenge) => Task.FromResult<string>(null);

@@ -13,8 +13,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Webapp.Models;
 using Webapp.Services;
 
 namespace Webapp
@@ -58,7 +60,8 @@ namespace Webapp
                 DataConnectionString = config.GetConnectionString("DataConnectionString"),
                 PropagateActivityId = true
             };
-            orleansClientConfig.AddSimpleMessageStreamProvider("Default");
+            // orleansClientConfig.AddSimpleMessageStreamProvider("Default");
+            orleansClientConfig.AddAzureQueueStreamProviderV2("Default", config.GetConnectionString("DataConnectionString"), clusterId: config["ClusterId"]);
 
             var attempt = 0;
             IClusterClient orleansClient;
@@ -89,47 +92,29 @@ namespace Webapp
                 }
             }
 
-            // we use a single settings file, that also contains the hosting settings
-            var urls = (config[WebHostDefaults.ServerUrlsKey] ?? "http://localhost:5000")
-                .Split(new[] { ',', ';' })
-                .Select(url => url.Trim())
-                .ToArray();
-
-            // find out if we run any secure urls
-            var secureUris = urls
-                .Distinct()
-                .Where(url => url.StartsWith("https://"))
-                .Select(url => new Uri(url))
-                .ToArray();
-
-            // It is possible to request Acme certificates with subject alternative names, but this is not yet implemented.
-            // Usually we'll need only a single address, so I'm taking the first one
-            // string firstSecureHost = secureUrls.Any() ? secureUrls.First().Host : null;
-            var listenUrls = urls
-                .Distinct()
-                .Where(url => url.StartsWith("http://"));
+            var endpoints = config.GetSection("Http:Endpoints")
+                    .GetChildren()
+                    .ToDictionary(section => section.Key, section =>
+                    {
+                        var endpoint = new EndpointConfiguration();
+                        section.Bind(endpoint);
+                        return endpoint;
+                    });
 
             // if so, start a listener to respond to Acme (Let's Encrypt) requests, using a response received via an Orleans Cache Grain
-            string[] httpsDomains;
+            var hasHttps = endpoints.Any(endpoint => endpoint.Value.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase));
             IWebHost acmeHost;
             AcmeOptions acmeOptions;
 
-            if (!secureUris.Any())
+            if (!hasHttps)
             {
-                httpsDomains = new string[] { };
                 acmeOptions = null;
                 acmeHost = null;
             }
             else
             {
-                // Kestrel can only listen once to any given port, so we make sure multiple https addresses get only one listener
-                var httpsListen = secureUris.GroupBy(url => url.Port).Select(url => url.First()).Select(url => "https://*:" + url.Port);
-                listenUrls = listenUrls.Union(httpsListen);
-                httpsDomains = secureUris.Select(url => url.Host).Distinct().ToArray();
-
                 acmeOptions = new AcmeOptions
                 {
-                    DomainNames = httpsDomains,
                     GetChallengeResponse = async (challenge) =>
                     {
                         var cacheGrain = orleansClient.GetGrain<ICacheGrain<string>>(challenge);
@@ -155,7 +140,7 @@ namespace Webapp
                 };
 
                 acmeHost = new WebHostBuilder()
-                    .UseConfiguration(config)
+                    // .UseConfiguration(config)
                     .ConfigureLogging((context, factory) =>
                     {
                         factory.AddConfiguration(context.Configuration.GetSection("Logging"));
@@ -172,8 +157,11 @@ namespace Webapp
                         // Register a certitificate manager, supplying methods to store and retreive certificates and acme challenge responses
                         services.AddAcmeCertificateManager(acmeOptions);
                     })
-                    .UseUrls("http://*:80/.well-known/acme-challenge/")
-                    .UseKestrel()
+                    // .UseUrls("http://*:80")
+                    // .PreferHostingUrls(false)
+                    .UseKestrel(options => {
+                        options.Listen(IPAddress.Any, 80);
+                    })
                     // .UseLoggerFactory(loggerFactory)
                     .Configure(app =>
                     {
@@ -192,40 +180,75 @@ namespace Webapp
                 }
             }
 
-            var host = new WebHostBuilder()
-                .UseConfiguration(config)
+            var webHost = new WebHostBuilder()
+                // .UseConfiguration(config)
                 .ConfigureServices(services =>
                 {
+                    services.AddSingleton<IConfiguration>(config);
                     services.AddSingleton<IClusterClient>(orleansClient);
                     services.AddSingleton<ILoggerFactory>(loggerFactory);
-                    if (secureUris.Any())
+                    if (hasHttps)
                         services.AddAcmeCertificateManager(acmeOptions);
                 })
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseEnvironment(environment)
-                .UseUrls(listenUrls.ToArray())
-                .UseSetting("baseUrl", urls.First())
+                // .UseUrls(listenUrls.ToArray())
+                .PreferHostingUrls(false)
                 .UseStartup<Startup>()
-                .UseKestrel(async options =>
+                .UseKestrel(options =>
                 {
-                    // TODO: Make this into a nice Kestrel.Https.Acme nuget package
-                    if (secureUris.Any())
+                    var certificateManager = options.ApplicationServices.GetService<ICertificateManager>();
+
+                    foreach (var endpoint in endpoints)
                     {
-                        // Request a new certificate with Let's Encrypt and store it for next time
-                        var certificateManager = options.ApplicationServices.GetService<ICertificateManager>();
-                        var certificate = await certificateManager.GetCertificate(httpsDomains);
-                        if (certificate != null)
+                        var endpointConfig = endpoint.Value;
+                        var port = endpointConfig.Port ?? (endpointConfig.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase) ? 443 : 80);
+
+                        var ipAddresses = new List<IPAddress>();
+                        var hosts = endpointConfig.Hosts ?? new List<string> { endpointConfig.Host };
+                        foreach (var host in hosts)
                         {
-                            options.Listen(IPAddress.Loopback, 443, listenOptions =>
+                            if (host.Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
                             {
-                                listenOptions.UseHttps(certificate);
+                                ipAddresses.Add(IPAddress.IPv6Loopback);
+                                ipAddresses.Add(IPAddress.Loopback);
+                            }
+                            else if (IPAddress.TryParse(host, out var address))
+                            {
+                                ipAddresses.Add(address);
+                            }
+                            else
+                            {
+                                ipAddresses.Add(IPAddress.IPv6Any);
+                            }
+                        }
+
+                        foreach (var address in ipAddresses)
+                        {
+                            options.Listen(address, port, async listenOptions =>
+                            {
+                                if (endpointConfig.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    X509Certificate2 certificate = null;
+                                    try
+                                    {
+                                        var domains = endpointConfig.Domains ?? new List<string> { endpointConfig.Domain };
+                                        // Request a new certificate with Let's Encrypt and store it for next time
+                                        certificate = await certificateManager.GetCertificate(domains.ToArray());
+                                        listenOptions.UseHttps(certificate);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        logger.LogCritical($"Kestrel startup: Exception getting certificate. {e.Message}");
+                                    }
+                                }
                             });
                         }
                     }
                 })
                 .Build();
 
-            host.Run();
+            webHost.Run();
         }
     }
 }

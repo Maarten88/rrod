@@ -63,9 +63,9 @@ namespace Microsoft.AspNetCore.Hosting
             if (pfx != null)
             {
                 cert = new X509Certificate2(pfx, options.AcmeSettings.PfxPassword);
-                if (cert.NotAfter - DateTime.UtcNow < TimeSpan.FromDays(14))
+                if (cert.NotAfter - DateTime.UtcNow < TimeSpan.FromDays(21))
                 {
-                    // Request a new cert 14 days before the current one expires
+                    // Request a new cert 21 days before the current one expires
                     pfx = await RequestNewCertificate(domainNames, options.AcmeSettings, options.SetChallengeResponse);
                     if (pfx != null)
                     {
