@@ -1,0 +1,20 @@
+{
+  "Http": {
+    "Endpoints": {
+      "Main": {
+        "Host": "0.0.0.0",
+        "Scheme": "https",
+        "Port": 5000,
+        "Domain": "XXXXXXXX.ngrok.io"
+      }
+    }
+  },
+  "Logging": {
+    "IncludeScopes": false,
+    "LogLevel": {
+      "Default": "Information",
+      "System": "Warning",
+      "Microsoft": "Warning"
+    }
+  }
+}

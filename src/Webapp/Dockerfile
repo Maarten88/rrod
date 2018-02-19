@@ -15,7 +15,7 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
 RUN apt-get install -y nodejs
 
 WORKDIR /app
-EXPOSE 5000
+EXPOSE 443 80
 
 FROM base AS final
 ENV ASPNETCORE_ENVIRONMENT Production

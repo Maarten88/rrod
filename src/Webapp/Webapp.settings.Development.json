@@ -1,0 +1,29 @@
+{
+  "Http": {
+    "Endpoints": {
+      "Main": {
+        "Host": "0.0.0.0",
+        "Scheme": "http",
+        "Port": 5000,
+        "Domain": "localhost"
+      }
+    }
+  },
+  "ConnectionStrings": {
+    "DataConnectionString": "UseDevelopmentStorage=true"
+  },
+  "AcmeSettings": {
+    "EmailAddress": "[YOUR EMAIL]",
+    "TermsOfServiceUri": "https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf",
+    "AcmeUri": "https://acme-staging.api.letsencrypt.org/directory",
+    "PfxPassword": "Some P@ssw0rd"
+  },
+  "Logging": {
+    "IncludeScopes": false,
+    "LogLevel": {
+      "Default": "Debug",
+      "System": "Warning",
+      "Microsoft": "Warning"
+    }
+  }
+}

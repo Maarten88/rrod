@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="*.json" CopyToPublishDirectory="Always" />
+    <None Include="OrleansHost.*.json" CopyToPublishDirectory="Always" />
   </ItemGroup>
 
 </Project>

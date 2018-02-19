@@ -1,0 +1,24 @@
+{
+  "Http": {
+    "Endpoints": {
+      "Main": {
+        "Host": "0.0.0.0",
+        "Scheme": "https",
+        "Port": 443,
+        "Domain": "1d7e40eb.ngrok.io"
+      }
+    }
+  },
+  "Logging": {
+    "IncludeScopes": false,
+    "LogLevel": {
+      "Default": "Information",
+      "System": "Warning",
+      "Microsoft": "Information"
+    }
+  },
+  "AcmeSettings": {
+    "TermsOfServiceUri": "https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf",
+    "AcmeUri": "https://acme-v01.api.letsencrypt.org/directory"
+  }  
+}

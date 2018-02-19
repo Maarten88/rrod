@@ -68,7 +68,7 @@
         {
             "label": "Push OrleansHost to ACR",
             "command": "docker",
-            "args": ["push", "maarten.azurecr.io/rrod/orleanshost"],
+            "args": ["push", "maarten.azurecr.io/rrod/orleanshost:latest"],
             "options": {
                 "cwd": "${workspaceRoot}"
             },
@@ -219,12 +219,6 @@
             "dependsOn": ["Build OrleansHost - Local", "Build Webapp - Local", "Run Webpack - Local"],
             "group": "build",
             "problemMatcher": ["$msCompile", "$tsc"]
-        },
-        // {
-        //     "label": "Build All - Docker Debug",
-        //     "dependsOn": ["Build OrleansHost", "Build Webapp", "Webpack"],
-        //     "group": "build",
-        //     "problemMatcher": ["$msCompile", "$tsc"]
-        // }        
+        }
     ]
 }

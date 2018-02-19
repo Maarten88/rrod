@@ -38,8 +38,9 @@ namespace OrleansHost
                         {"ClusterId", "rrod-cluster"},
                     })
                 .AddCommandLine(args)
-                .AddJsonFile("appconfig.json", optional: true)
-                .AddJsonFile($"appconfig.{environment}.json", optional: true)
+                .AddJsonFile("OrleansHost.settings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile($"OrleansHost.settings.{environment}.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("/run/config/OrleansHost.settings.json", optional: true, reloadOnChange: true)
                 .AddDockerSecrets("/run/secrets", optional: true)   // we can pas connectionstring as a docker secret
                 .AddUserSecrets<Program>(optional: true)            // for development
                 .AddEnvironmentVariables("RROD_")                   // can override all settings (i.e. URLS) by passing an environment variable
@@ -50,6 +51,11 @@ namespace OrleansHost
             var logger = LoggerFactory.CreateLogger<Program>();
 
             logger.LogWarning($"Starting Orleans silo in {environment} environment...");
+
+            foreach (var provider in config.Providers)
+            {
+                logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} top-level items");
+            }
 
             var clusterConfig = new ClusterConfiguration();
             clusterConfig.Globals.ClusterId = config["ClusterId"];

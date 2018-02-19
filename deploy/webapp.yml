@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+spec:
+  selector:
+    matchLabels:
+      app: rrod
+      role: web
+      environment: production
+  template:
+    metadata:
+      labels:
+        app: rrod
+        role: web
+        environment: production
+        version: "1.0.0"
+    spec:
+      imagePullSecrets:
+      - name: acrconnection  
+      containers:
+      - name: webapp-container
+        image: maarten.azurecr.io/rrod/webapp:latest
+        ports:
+        - containerPort: 443
+        - containerPort: 80
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Production
+        - name: RROD_ClusterId
+          value: rrod-k8s
+        - name: RROD_Id
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: RROD_ConnectionStrings__DataConnectionString
+          valueFrom:
+            secretKeyRef:
+              name: connectionstrings
+              key: DataConnectionString
+        - name: RROD_AcmeSettings__EmailAddress
+          valueFrom:
+            secretKeyRef:
+              name: acme-settings
+              key: EmailAddress
+        - name: RROD_AcmeSettings__PfxPassword
+          valueFrom:
+            secretKeyRef:
+              name: acme-settings
+              key: PfxPassword
+        volumeMounts:
+        - mountPath: /run/config
+          name: config
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /info
+            port: 443
+          initialDelaySeconds: 45
+          periodSeconds: 30
+          timeoutSeconds: 3
+      volumes:
+      - name: config
+        configMap:
+          name: webapp-config
+          items:
+          - key: webapp-settings
+            path: Webapp.settings.json

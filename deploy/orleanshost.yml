@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orleanshost-deployment
+spec:
+  selector:
+    matchLabels:
+      app: rrod
+      role: silo
+      environment: production
+  template:
+    metadata:
+      labels:
+        app: rrod
+        role: silo
+        environment: production
+        version: "1.0.0"
+    spec:
+      imagePullSecrets:
+      - name: acrconnection  
+      containers:
+      - name: orleanshost-container
+        image: maarten.azurecr.io/rrod/orleanshost:latest
+        ports:
+        - containerPort: 11111
+        - containerPort: 30000
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Production
+        - name: RROD_ClusterId
+          value: rrod-k8s
+        - name: RROD_Id
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: RROD_ConnectionStrings__DataConnectionString
+          valueFrom:
+            secretKeyRef:
+              name: connectionstrings
+              key: DataConnectionString
+        - name: RROD_ConnectionStrings__ReduxConnectionString
+          valueFrom:
+            secretKeyRef:
+              name: connectionstrings
+              key: DataConnectionString
+        - name: RROD_ConnectionStrings__SmtpConnectionString
+          valueFrom:
+            secretKeyRef:
+              name: connectionstrings
+              key: SmtpConnectionString
+        volumeMounts:
+          - mountPath: /run/config
+            name: config
+      volumes:
+        - name: config
+          configMap:
+            name: orleanshost-config
+            items:
+            - key: orleanshost-settings
+              path: OrleansHost.settings.json

@@ -39,8 +39,9 @@ namespace Webapp
                     {"ClusterId", "rrod-cluster"},
                 })
                 .AddCommandLine(args)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{environment}.json", optional: true)
+                .AddJsonFile("Webapp.settings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile($"Webapp.settings.{environment}.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("/run/config/Webapp.settings.json", optional: true, reloadOnChange: true)
                 .AddDockerSecrets("/run/secrets", optional: true)
                 .AddUserSecrets<Program>(optional: true)
                 .AddEnvironmentVariables("RROD_")
@@ -51,6 +52,11 @@ namespace Webapp
                 .AddDebug();
             var logger = loggerFactory.CreateLogger<Program>();
             logger.LogWarning($"Starting Webapp in {environment} environment...");
+
+            foreach (var provider in config.Providers)
+            {
+                logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} top-level items");
+            }
 
             // Initialize the connection to the OrleansHost process
             var orleansClientConfig = new ClientConfiguration
