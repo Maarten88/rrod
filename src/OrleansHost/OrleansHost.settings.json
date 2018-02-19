@@ -9,7 +9,7 @@
     "LogLevel": {
       "Default": "Information",
       "System": "Warning",
-      "Microsoft": "Warning"
+      "Microsoft": "Information"
     }
   }
 }

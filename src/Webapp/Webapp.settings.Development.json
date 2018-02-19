@@ -13,7 +13,7 @@
     "DataConnectionString": "UseDevelopmentStorage=true"
   },
   "AcmeSettings": {
-    "EmailAddress": "[YOUR EMAIL]",
+    "EmailAddress": "fake@example.com",
     "TermsOfServiceUri": "https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf",
     "AcmeUri": "https://acme-staging.api.letsencrypt.org/directory",
     "PfxPassword": "Some P@ssw0rd"
@@ -22,8 +22,8 @@
     "IncludeScopes": false,
     "LogLevel": {
       "Default": "Debug",
-      "System": "Warning",
-      "Microsoft": "Warning"
+      "System": "Information",
+      "Microsoft": "Debug"
     }
   }
 }
