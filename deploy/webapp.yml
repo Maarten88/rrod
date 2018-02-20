@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: webapp-deployment
@@ -22,13 +22,17 @@ spec:
       - name: webapp-container
         image: maarten.azurecr.io/rrod/webapp:latest
         ports:
-        - containerPort: 443
-        - containerPort: 80
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        - name: https
+          containerPort: 443
+          protocol: TCP
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: Production
         - name: RROD_ClusterId
-          value: rrod-k8s
+          value: rrod-az
         - name: RROD_Id
           valueFrom:
             fieldRef:
@@ -51,14 +55,6 @@ spec:
         volumeMounts:
         - mountPath: /run/config
           name: config
-        livenessProbe:
-          httpGet:
-            scheme: HTTPS
-            path: /info
-            port: 443
-          initialDelaySeconds: 45
-          periodSeconds: 30
-          timeoutSeconds: 3
       volumes:
       - name: config
         configMap:

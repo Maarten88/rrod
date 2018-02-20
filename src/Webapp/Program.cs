@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Orleans.Concurrency;
 using Orleans.Runtime;
@@ -109,17 +110,13 @@ namespace Webapp
 
             // if so, start a listener to respond to Acme (Let's Encrypt) requests, using a response received via an Orleans Cache Grain
             var hasHttps = endpoints.Any(endpoint => endpoint.Value.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase));
-            IWebHost acmeHost;
-            AcmeOptions acmeOptions;
+            var needPort80 = endpoints.Any(endpoint => (endpoint.Value.Port ?? (endpoint.Value.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase) ? 443 : 80)) == 80);
+            var certs = new Dictionary<string, X509Certificate2>();
 
-            if (!hasHttps)
+            if (hasHttps)
             {
-                acmeOptions = null;
-                acmeHost = null;
-            }
-            else
-            {
-                acmeOptions = new AcmeOptions
+                logger.LogWarning($"At least one https endpoint is present. Initialize Acme endpoint.");
+                var acmeOptions = new AcmeOptions
                 {
                     GetChallengeResponse = async (challenge) =>
                     {
@@ -145,7 +142,7 @@ namespace Webapp
                     }
                 };
 
-                acmeHost = new WebHostBuilder()
+                var acmeHost = new WebHostBuilder()
                     // .UseConfiguration(config)
                     .ConfigureLogging((context, factory) =>
                     {
@@ -164,7 +161,7 @@ namespace Webapp
                         services.AddAcmeCertificateManager(acmeOptions);
                     })
                     // .UseUrls("http://*:80")
-                    // .PreferHostingUrls(false)
+                    .PreferHostingUrls(false)
                     .UseKestrel(options => {
                         options.Listen(IPAddress.Any, 80);
                     })
@@ -177,12 +174,56 @@ namespace Webapp
 
                 try
                 {
-                    acmeHost.Start();
+                    await acmeHost.StartAsync();
                 }
                 catch (Exception e)
                 {
                     logger.LogError("Error: can't start web listener for acme certificate renewal, probably the web address is in use by another process. Exception message is: " + e.Message);
                     logger.LogError("Ignoring noncritical error (stop W3SVC or Skype to fix this), continuing...");
+                }
+
+                var certificateManager = new AcmeCertificateManager(Options.Create(acmeOptions));
+                foreach (var endpoint in endpoints)
+                {
+                    var endpointConfig = endpoint.Value;
+                    bool isHttpsEndpoint = endpointConfig.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase);
+                    var port = endpointConfig.Port ?? (isHttpsEndpoint ? 443 : 80);
+
+                    X509Certificate2 certificate = null;
+                    if (isHttpsEndpoint)
+                    {
+                        try
+                        {
+                            var domains = new List<string> { endpointConfig.Domain }
+                                .Concat(endpointConfig.Domains)
+                                .Where(ep => !string.IsNullOrEmpty(ep))
+                                .Distinct()
+                                .ToArray();
+
+                            logger.LogInformation($"Getting certificate for domain {domains.First()} on port {port}");
+
+                            // Request a new certificate with Let's Encrypt and store it for next time
+                            certificate = await certificateManager.GetCertificate(domains);
+                            if (certificate == null)
+                            {
+                                // It didn't work - create a temporary certificate so that we can still start with an untrusted certificate
+                                logger.LogCritical($"Error getting certificate for domain {domains.First()} (endpoint '{endpoint.Key}')");
+                                // var certificateAuthorityCertificate = CertBuilder.CreateCertificateAuthorityCertificate("RrodCA", out var tmpCaPrivateKey);
+                                // certificate = CertBuilder.CreateSelfSignedCertificateBasedOnCertificateAuthorityPrivateKey(domains.First(), certificateAuthorityCertificate.Subject, tmpCaPrivateKey);
+                                certificate = CertHelper.BuildTlsSelfSignedServer(domains);
+                            }
+                            certs.Add(domains.First(), certificate);
+                            logger.LogInformation($"Certificate for domain {domains.First()}: {certificate != null}");
+                        }
+                        catch (Exception e)
+                        {
+                            logger.LogCritical($"Kestrel startup: Exception getting certificate. {e.Message}");
+                        }
+                    }
+                }
+                if (needPort80)
+                {
+                    await acmeHost.StopAsync();
                 }
             }
 
@@ -193,28 +234,33 @@ namespace Webapp
                     services.AddSingleton<IConfiguration>(config);
                     services.AddSingleton<IClusterClient>(orleansClient);
                     services.AddSingleton<ILoggerFactory>(loggerFactory);
-                    if (hasHttps)
-                        services.AddAcmeCertificateManager(acmeOptions);
                 })
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseEnvironment(environment)
                 // .UseUrls(listenUrls.ToArray())
                 .PreferHostingUrls(false)
+                .Configure(app =>
+                {
+                    app.UseAcmeResponse();
+                })
                 .UseStartup<Startup>()
                 .UseKestrel(options =>
                 {
-                    var certificateManager = options.ApplicationServices.GetService<ICertificateManager>();
-
                     foreach (var endpoint in endpoints)
                     {
                         var endpointConfig = endpoint.Value;
-                        var port = endpointConfig.Port ?? (endpointConfig.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase) ? 443 : 80);
+                        bool isHttpsEndpoint = endpointConfig.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase);
+                        var port = endpointConfig.Port ?? (isHttpsEndpoint ? 443 : 80);
 
                         var ipAddresses = new List<IPAddress>();
-                        var hosts = endpointConfig.Hosts ?? new List<string> { endpointConfig.Host };
+                        var hosts = new List<string> { endpointConfig.Host }
+                            .Concat(endpointConfig.Hosts)
+                            .Where(ep => !string.IsNullOrEmpty(ep))
+                            .Distinct();
+
                         foreach (var host in hosts)
                         {
-                            if (host.Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
+                            if (host == "localhost")
                             {
                                 ipAddresses.Add(IPAddress.IPv6Loopback);
                                 ipAddresses.Add(IPAddress.Loopback);
@@ -225,27 +271,30 @@ namespace Webapp
                             }
                             else
                             {
-                                ipAddresses.Add(IPAddress.IPv6Any);
+                                logger.LogError($"Error parsing endpoint host: {host}");
                             }
                         }
 
                         foreach (var address in ipAddresses)
                         {
-                            options.Listen(address, port, async listenOptions =>
+                            options.Listen(address, port, listenOptions =>
                             {
-                                if (endpointConfig.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase))
+                                if (isHttpsEndpoint)
                                 {
-                                    X509Certificate2 certificate = null;
-                                    try
+                                    var domains = new List<string> { endpointConfig.Domain }
+                                        .Concat(endpointConfig.Domains)
+                                        .Where(ep => !string.IsNullOrEmpty(ep))
+                                        .Distinct()
+                                        .ToArray();
+                                    
+                                    if (certs.TryGetValue(domains.First(), out var certificate))
                                     {
-                                        var domains = endpointConfig.Domains ?? new List<string> { endpointConfig.Domain };
-                                        // Request a new certificate with Let's Encrypt and store it for next time
-                                        certificate = await certificateManager.GetCertificate(domains.ToArray());
+                                        logger.LogInformation($"Kestrel config: Listen on address {address.ToString()}:{port}, certificate {(certificate == null ? "NULL" : certificate.Subject.ToString())}");
                                         listenOptions.UseHttps(certificate);
                                     }
-                                    catch (Exception e)
+                                    else
                                     {
-                                        logger.LogCritical($"Kestrel startup: Exception getting certificate. {e.Message}");
+                                        logger.LogError($"No certificate for domain: {domains.First()}");
                                     }
                                 }
                             });

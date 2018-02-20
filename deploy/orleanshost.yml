@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: orleanshost-deployment
@@ -28,7 +28,7 @@ spec:
         - name: ASPNETCORE_ENVIRONMENT
           value: Production
         - name: RROD_ClusterId
-          value: rrod-k8s
+          value: rrod-az
         - name: RROD_Id
           valueFrom:
             fieldRef:

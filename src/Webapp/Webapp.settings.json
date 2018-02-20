@@ -4,8 +4,8 @@
       "Main": {
         "Host": "0.0.0.0",
         "Scheme": "https",
-        "Port": 5000,
-        "Domain": "XXXXXXXX.ngrok.io"
+        "Port": 443,
+        "Domain": "localhost"
       }
     }
   },

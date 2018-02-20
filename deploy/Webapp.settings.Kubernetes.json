@@ -5,16 +5,17 @@
         "Host": "0.0.0.0",
         "Scheme": "https",
         "Port": 443,
-        "Domain": "XXXXXXXX.ngrok.io"
+        "Domain": "rrod.sikkema.com",
+        "Domains": ["rrod.westeurope.cloudapp.azure.com"]
       }
     }
   },
   "Logging": {
     "IncludeScopes": false,
     "LogLevel": {
-      "Default": "Information",
-      "System": "Warning",
-      "Microsoft": "Information"
+      "Default": "Debug",
+      "System": "Information",
+      "Microsoft": "Debug"
     }
   },
   "AcmeSettings": {

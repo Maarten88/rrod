@@ -158,7 +158,9 @@
                 "-e",
                 "RROD_ConnectionStrings__DataConnectionString='${env:RROD_ConnectionStrings__DataConnectionString}'",
                 "-p",
-                "5000:5000",
+                "443:443",
+                "-p",
+                "80:80",
                 "--name",
                 "webapp.debug_1", 
                 "webapp.debug:latest"

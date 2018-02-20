@@ -4,6 +4,8 @@ metadata:
   name: rrod-service
 spec:
   type: LoadBalancer
+  sessionAffinity: ClientIP
+  loadBalancerIP: 40.68.116.158
   selector:
     app: rrod
     role: web
@@ -16,5 +18,3 @@ spec:
     port: 443
     targetPort: 443
     protocol: TCP
-  externalIPs:
-  - 192.168.0.116
