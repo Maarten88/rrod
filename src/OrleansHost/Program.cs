@@ -17,6 +17,8 @@ using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
 using Orleans.Runtime;
+using Orleans.Storage;
+using Orleans.Providers.Streams.AzureQueue;
 
 namespace OrleansHost
 {
@@ -54,32 +56,13 @@ namespace OrleansHost
 
             foreach (var provider in config.Providers)
             {
-                logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} top-level items");
+                logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} settings");
             }
 
-            var clusterConfig = new ClusterConfiguration();
-            clusterConfig.Globals.ClusterId = config["ClusterId"];
-            clusterConfig.Globals.DataConnectionString = config.GetConnectionString("DataConnectionString");
-            clusterConfig.Globals.LivenessType = GlobalConfiguration.LivenessProviderType.AzureTable;
-            clusterConfig.Globals.ReminderServiceType = GlobalConfiguration.ReminderServiceProviderType.AzureTable;
-            clusterConfig.Globals.FastKillOnCancelKeyPress = true;
-
-            clusterConfig.Defaults.PropagateActivityId = true;
-            clusterConfig.Defaults.ProxyGatewayEndpoint = new IPEndPoint(IPAddress.Any, 30000);
-            clusterConfig.Defaults.Port = 11111;
-
-            clusterConfig.AddAzureTableStorageProvider("Default", config.GetConnectionString("DataConnectionString"));
-            // clusterConfig.AddMemoryStorageProvider("PubSubStore");
-            clusterConfig.AddAzureTableStorageProvider("PubSubStore", config.GetConnectionString("DataConnectionString"));
-            // clusterConfig.AddSimpleMessageStreamProvider("Default");
-            clusterConfig.AddAzureQueueStreamProviderV2("Default", config.GetConnectionString("DataConnectionString"), clusterId: config["ClusterId"]);
-            var siloName = config["Id"];
-
             silo = new SiloHostBuilder()
-                .UseConfiguration(clusterConfig)
-                // .ConfigureLogging(logBuilder => logBuilder.SetMinimumLevel(LogLevel.Warning).AddConsole())
-                .ConfigureSiloName(siloName)
-                .ConfigureServices(services =>
+                .ConfigureSiloName(config["Id"])
+                .Configure(options => options.ClusterId = config["ClusterId"])
+                .ConfigureServices((context, services) =>
                 {
                     services.AddOptions();
                     services.TryAdd(ServiceDescriptor.Singleton<ILoggerFactory, LoggerFactory>());
@@ -91,19 +74,32 @@ namespace OrleansHost
                     services.AddSingleton(new ReduxTableStorage<CounterState>(reduxConnectionString));
                     services.AddSingleton(new ReduxTableStorage<StringStoreState>(reduxConnectionString));
                 })
-                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(CounterGrain).Assembly).WithReferences())
+                .ConfigureApplicationParts(parts =>
+                {
+                    parts.AddApplicationPart(typeof(CounterGrain).Assembly).WithReferences();
+                    parts.AddApplicationPart(typeof(AzureQueueDataAdapterV2).Assembly).WithReferences();
+                })
+                .AddAzureTableGrainStorageAsDefault(options => options.ConnectionString = config.GetConnectionString("DataConnectionString"))
+                .UseAzureStorageClustering(options => options.ConnectionString = config.GetConnectionString("DataConnectionString"))
+                .UseAzureTableReminderService(options => options.ConnectionString = config.GetConnectionString("DataConnectionString"))
+                .AddAzureTableGrainStorage("PubSubStore", options => options.ConnectionString = config.GetConnectionString("DataConnectionString"))
+                .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", options =>
+                {
+                    options.ConnectionString = config.GetConnectionString("DataConnectionString");
+                    options.ClusterId = config["ClusterId"];
+                })
                 .Build();
 
-                await StartSilo();
+            await StartSilo();
 
-                AssemblyLoadContext.Default.Unloading += context =>
-                {
-                    Task.Run(StopSilo);
-                    SiloStopped.WaitOne();
-                };
-
+            AssemblyLoadContext.Default.Unloading += context =>
+            {
+                Task.Run(StopSilo);
                 SiloStopped.WaitOne();
-            }
+            };
+
+            SiloStopped.WaitOne();
+        }
 
         private static async Task StartSilo()
         {

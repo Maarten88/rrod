@@ -16,8 +16,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.5" />
     <PackageReference Include="Microsoft.Extensions.Configuration.DockerSecrets.Unofficial" Version="1.1.2" />
-    <PackageReference Include="Microsoft.Orleans.Server" Version="2.0.0-beta3" />
-    <PackageReference Include="Microsoft.Orleans.OrleansAzureUtils" Version="2.0.0-beta3" />
+    <PackageReference Include="Microsoft.Orleans.Server" Version="2.0.0-rc1" />
+    <PackageReference Include="Microsoft.Orleans.OrleansAzureUtils" Version="2.0.0-rc1" />
     <PackageReference Include="Certes" Version="1.1.3" />
     <PackageReference Include="MimeKit" Version="2.0.1" />
     <PackageReference Include="MailKit" Version="2.0.1" />

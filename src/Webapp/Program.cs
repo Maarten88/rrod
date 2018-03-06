@@ -7,8 +7,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Orleans.Concurrency;
+using Orleans.Hosting;
+using Orleans.Providers.Streams.AzureQueue;
 using Orleans.Runtime;
-using Orleans.Runtime.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -56,46 +57,54 @@ namespace Webapp
 
             foreach (var provider in config.Providers)
             {
-                logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} top-level items");
+                logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} settings");
             }
 
-            // Initialize the connection to the OrleansHost process
-            var orleansClientConfig = new ClientConfiguration
-            {
-                ClusterId = config["ClusterId"],
-                GatewayProvider = ClientConfiguration.GatewayProviderType.AzureTable,
-                DataConnectionString = config.GetConnectionString("DataConnectionString"),
-                PropagateActivityId = true
-            };
-            // orleansClientConfig.AddSimpleMessageStreamProvider("Default");
-            orleansClientConfig.AddAzureQueueStreamProviderV2("Default", config.GetConnectionString("DataConnectionString"), clusterId: config["ClusterId"]);
 
-            var attempt = 0;
-            IClusterClient orleansClient;
+            int attempt = 0;
+            int initializeAttemptsBeforeFailing = 7;
+            IClusterClient clusterClient;
             while (true)
             {
-                orleansClient = new ClientBuilder()
-                    .UseConfiguration(orleansClientConfig)
-                    .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ICounterGrain).Assembly).WithReferences())
+                // Initialize orleans client
+                clusterClient = new ClientBuilder()
+                    .ConfigureLogging(logging =>
+                    {
+                        logging.AddConfiguration(config);
+                    })
+                    .ConfigureCluster(options =>
+                    {
+                        options.ClusterId = config["ClusterId"];
+                    })
+                    .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", options =>
+                    {
+                        options.ConnectionString = config.GetConnectionString("DataConnectionString");
+                        options.ClusterId = config["ClusterId"];
+                    })
+                    .ConfigureApplicationParts(parts =>
+                    {
+                        parts.AddApplicationPart(typeof(ICounterGrain).Assembly).WithReferences();
+                        parts.AddApplicationPart(typeof(AzureQueueDataAdapterV2).Assembly).WithReferences();
+                    })
+                    .UseAzureStorageClustering(options => options.ConnectionString = config.GetConnectionString("DataConnectionString"))
                     .Build();
+
                 try
                 {
-                    await orleansClient.Connect().ConfigureAwait(false);
+                    await clusterClient.Connect().ConfigureAwait(false);
                     logger.LogInformation("Client successfully connected to silo host");
                     break;
                 }
-                catch (Exception ex) when (ex is OrleansException || ex is SiloUnavailableException || (ex is AggregateException && ex.InnerException is SiloUnavailableException))
+                catch (SiloUnavailableException)
                 {
-                    orleansClient.Dispose();
-
                     attempt++;
-                    logger.LogWarning($"Attempt {attempt} of 8 failed to initialize the Orleans client.");
-                    if (attempt > 7)
+                    logger.LogWarning($"Attempt {attempt} of {initializeAttemptsBeforeFailing} failed to initialize the Orleans client.");
+                    if (attempt > initializeAttemptsBeforeFailing)
                     {
                         throw;
                     }
                     // Wait 4 seconds before retrying
-                    await Task.Delay(4000);
+                    await Task.Delay(TimeSpan.FromSeconds(4));
                 }
             }
 
@@ -120,23 +129,23 @@ namespace Webapp
                 {
                     GetChallengeResponse = async (challenge) =>
                     {
-                        var cacheGrain = orleansClient.GetGrain<ICacheGrain<string>>(challenge);
+                        var cacheGrain = clusterClient.GetGrain<ICacheGrain<string>>(challenge);
                         var response = await cacheGrain.Get();
                         return response.Value;
                     },
                     SetChallengeResponse = async (challenge, response) =>
                     {
-                        var cacheGrain = orleansClient.GetGrain<ICacheGrain<string>>(challenge);
+                        var cacheGrain = clusterClient.GetGrain<ICacheGrain<string>>(challenge);
                         await cacheGrain.Set(new Immutable<string>(response), TimeSpan.FromHours(2));
                     },
                     StoreCertificate = async (string domainName, byte[] certData) =>
                     {
-                        var certGrain = orleansClient.GetGrain<ICertGrain>(domainName);
+                        var certGrain = clusterClient.GetGrain<ICertGrain>(domainName);
                         await certGrain.UpdateCertificate(certData);
                     },
                     RetrieveCertificate = async (domainName) =>
                     {
-                        var certGrain = orleansClient.GetGrain<ICertGrain>(domainName);
+                        var certGrain = clusterClient.GetGrain<ICertGrain>(domainName);
                         var certData = await certGrain.GetCertificate();
                         return certData.Value;
                     }
@@ -153,7 +162,7 @@ namespace Webapp
                     .UseEnvironment(environment)
                     .ConfigureServices(services =>
                     {
-                        services.AddSingleton<IClusterClient>(orleansClient);
+                        services.AddSingleton<IClusterClient>(clusterClient);
                         services.AddSingleton<ILoggerFactory>(loggerFactory);
                         services.Configure<AcmeSettings>(config.GetSection(nameof(AcmeSettings)));
 
@@ -232,7 +241,7 @@ namespace Webapp
                 .ConfigureServices(services =>
                 {
                     services.AddSingleton<IConfiguration>(config);
-                    services.AddSingleton<IClusterClient>(orleansClient);
+                    services.AddSingleton<IClusterClient>(clusterClient);
                     services.AddSingleton<ILoggerFactory>(loggerFactory);
                 })
                 .UseContentRoot(Directory.GetCurrentDirectory())
