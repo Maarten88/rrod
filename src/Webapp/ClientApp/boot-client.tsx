@@ -11,7 +11,7 @@ import { actionCreators as xsrfActionCreatores } from './store/Xsrf';
 import * as SignalRModule from './store/SignalRConnection';
 import * as RoutesModule from './routes';
 import ConnectionContainer from './containers/ConnectionContainer';
-import { loadPolyfill } from './loadPolyfill';
+// import { loadPolyfill } from './loadPolyfill';
 
 import './css/site.scss';
 
@@ -67,8 +67,9 @@ function main() {
     }
 }
 
+main();
 
 // Load polyfills for IE (we need at least version 10 because WebSockets)
-loadPolyfill()
-    .then(main);
+//loadPolyfill()
+//    .then(main);
 

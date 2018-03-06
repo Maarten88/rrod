@@ -1,11 +1,10 @@
 {
   // This config is for vs / vscode
-  "include": [ "./ClientApp" ],
+  "include": [ "ClientApp" ],
   "exclude": [
     "dist",
     "bin",
-    "obj",
-    "node_modules"
+    "obj"
   ],
   "compilerOptions": {
     "baseUrl": ".",
@@ -13,6 +12,7 @@
     "jsx": "react",
     "lib": [ "es2017", "dom" ],
     "allowJs": true,
+    "maxNodeModuleJsDepth": 1,
     "types": [
       "webpack-env"
     ],

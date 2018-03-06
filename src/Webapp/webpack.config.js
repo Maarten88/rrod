@@ -4,9 +4,7 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const merge = require('webpack-merge');
 const CompressionPlugin = require("compression-webpack-plugin");
 // const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
-// const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-// const q = require('querystring');
 
 module.exports = (env) => {
     const isDevBuild = !(env && env.prod);
@@ -34,16 +32,7 @@ module.exports = (env) => {
     var clientBundleOutputDir = './wwwroot/dist';
     var clientBundleConfig = merge(sharedConfig(), {
         entry: {
-            'main-client': './ClientApp/boot-client.tsx',
-            // 'vendor': [
-            //     'react-hot-loader',
-            //     'tslib',
-            //     'react',
-            //     'react-dom',
-            //     'react-bootstrap'
-            // ],
-            // 'polyfill': './ClientApp/polyfill.ts',
-            // 'pre': './ClientApp/loadPolyfill.ts',
+            'main-client': './ClientApp/boot-client.tsx'
         },
         output: {
             path: path.join(__dirname, clientBundleOutputDir)
@@ -70,11 +59,7 @@ module.exports = (env) => {
                             //    instance: 'at-client'
                             //}
                         }
-                        //{
-                        //    loader: 'ifdef-loader',
-                        //    options: clientIfdefOptions
-                        //}
-                    ] //'awesome-typescript-loader?silent=true&useCache=false&instance=at-client'
+                    ]
                 },
                 {
                     test: /\.(css|scss)$/,
@@ -103,20 +88,11 @@ module.exports = (env) => {
             ]
         },
         plugins: [
-            //new webpack.DefinePlugin({
-            //    'process.env.NODE_ENV': isDevBuild ? '"development"' : '"production"'
-            //}),
             extractCSS
          ].concat(isDevBuild ? [
             // Plugins that apply in development builds only 
-            // new webpack.HotModuleReplacementPlugin(),
-            new webpack.SourceMapDevToolPlugin({
-                filename: '[file].map', // Remove this line if you prefer inline source maps
-                moduleFilenameTemplate: path.relative(clientBundleOutputDir, '[resourcePath]') // Point sourcemap entries to the original file locations on disk
-            })
         ] : [
             // Plugins that apply in production builds only
-            // new UglifyJSPlugin(),
             new CompressionPlugin({
                 asset: "[path].gz[query]",
                 algorithm: "gzip",
@@ -128,32 +104,18 @@ module.exports = (env) => {
                 analyzerMode: 'static',
             })
         ]),
-        //optimization: {
-        //    splitChunks: {
-        //        cacheGroups: {
-        //            polyfill: {
-        //                test: /core-js[\\/]modules[\\/]es6|core-js[\\/]es6|polyfill|raf|fetch|performance-now/,
-        //                name: "polyfill",
-        //                chunks: "all"
-        //            },
-        //            vendor: {
-        //                test: /react|animated|stream|url|redux/,
-        //                name: "vendor",
-        //                chunks: "initial"
-        //            }
-        //            //vendor: {
-        //            //    test: /tslib|react|react-dom|react-bootstrap|redux|react-redux/,
-        //            //    name: "vendor",
-        //            //    chunks: "all"
-        //            //}
-        //            //commons: {
-        //            //    test: /[\\/]node_modules[\\/]/,
-        //            //    name: "vendor",
-        //            //    chunks: "all"
-        //            //}
-        //        }
-        //    }
-        //}
+        optimization: {
+            splitChunks: {
+                cacheGroups: {
+                    commons: {
+                        test: /[\\/]node_modules[\\/]/,
+                        name: "vendor",
+                        chunks: "all"
+                    }
+                }
+            }
+        },
+        devtool: "source-map"
     });
 
     // Configuration for server-side (prerendering) bundle suitable for running in Node
@@ -202,8 +164,7 @@ module.exports = (env) => {
             libraryTarget: 'commonjs',
             path: path.join(__dirname, './ClientApp/dist')
         },
-        target: 'node',
-        devtool: 'inline-source-map'
+        target: 'node'
     });
 
     return [clientBundleConfig, serverBundleConfig];

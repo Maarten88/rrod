@@ -84,7 +84,7 @@ export default createServerRenderer(params => {
                     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
                     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                     <link rel="stylesheet" href="/dist/site.css" />
-                    {/* <script src="https://cdn.polyfill.io/v2/polyfill.min.js"></script> */}
+                    <script src="https://cdn.polyfill.io/v2/polyfill.js?features=default,Array.prototype.includes,Symbol,Promise,WeakMap,Object.setPrototypeOf,Object.getPrototypeOf,Object.entries"></script>
                     <base href="/" />
                     {/* <InlineScript script="delete window.Symbol;" /> */}
                     {headTags}
@@ -92,7 +92,7 @@ export default createServerRenderer(params => {
                 <body>
                     <div id="react-app" dangerouslySetInnerHTML={{__html: appString}} />
                     <InlineScript script={"window.initialReduxState = " + JSON.stringify(state)} />
-                    {/* <script src="/dist/vendor.js"></script> */}
+                    <script src="/dist/vendor.js"></script>
                     <script src="/dist/main-client.js"></script>
                 </body>
             </html>

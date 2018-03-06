@@ -9,7 +9,7 @@ import { LoginModel } from '../server/LoginModel';
 import { HeadTag } from '../lib/react-head';
 
 function head() {
-    return <HeadTag key="title" tag="title">Atenta - Login</HeadTag>;
+    return <HeadTag key="title" tag="title">RROD - Login</HeadTag>;
 }
 
 type LoginProps = LoginStore.LoginState & typeof LoginStore.actionCreators & RouteComponentProps<{}>;
@@ -69,7 +69,7 @@ class Login extends React.Component<LoginProps, LoginModel> {
     renderAnonymous() {
         return <Grid className="omb_login">
             {head()}
-            <h2 className="omb_authTitle">Login of <Link to={'/Register'}>Registreer</Link></h2>
+            <h2 className="omb_authTitle">Login or <Link to={'/Register'}>Register</Link></h2>
             <Row className="omb_socialButtons">
                 <Col xs={4} sm={2} smOffset={3} >
                     <Link to="#" className="btn btn-lg btn-block omb_btn-facebook">
@@ -94,7 +94,7 @@ class Login extends React.Component<LoginProps, LoginModel> {
             <Row className="omb_loginOr">
                 <Col xs={12} sm={6} smOffset={3} >
                     <hr className="omb_hrOr" />
-                    <span className="omb_spanOr">of</span>
+                    <span className="omb_spanOr">or</span>
                 </Col>
             </Row>
 
@@ -104,7 +104,7 @@ class Login extends React.Component<LoginProps, LoginModel> {
                         <FormGroup validationState={this.getValidationState()}>
                             <InputGroup>
                                 <InputGroup.Addon><i className="fa fa-user" /></InputGroup.Addon>
-                                <FormControl name="email" type="text" onChange={(e) => this.handleChange(e)} placeholder="Login Naam" />
+                                <FormControl name="email" type="text" onChange={(e) => this.handleChange(e)} placeholder="Email" />
                             </InputGroup>
                             <FormControl.Feedback />
                         </FormGroup>
@@ -117,21 +117,23 @@ class Login extends React.Component<LoginProps, LoginModel> {
                             <HelpBlock>{this.props.loginError}</HelpBlock>
                         </FormGroup>
 
-                        <Button className="btn btn-lg btn-primary btn-block" type="submit">Inloggen</Button>
+                        <Button className="btn btn-lg btn-primary btn-block" type="submit">Login</Button>
                     </Form>
                 </Col>
             </Row>
 
             <Row>
-                <Col xs={12} sm={3} smOffset={3}>
-                    <FormGroup>
-                        <Checkbox>Onthou mij</Checkbox>
-                    </FormGroup>
-                </Col>
-                <Col xs={12} sm={3}>
-                    <p className="omb_forgotPwd">
-                        <Link to="#">Password vergeten?</Link>
-                    </p>
+                <Col xs={12} sm={6} smOffset={3} >
+                    <Row>
+                        <Col sm={6}>
+                            <Checkbox>Remember me</Checkbox>
+                        </Col>
+                        <Col sm={6} className="omb_forgotPwd">
+                            <div className="pull-right">
+                                <Link to="#">Forgot Password?</Link>
+                            </div>
+                        </Col>
+                    </Row>
                 </Col>
             </Row>
         </Grid>
