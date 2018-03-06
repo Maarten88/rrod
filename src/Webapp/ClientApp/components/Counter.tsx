@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { ApplicationState }  from '../store';
 import * as CounterStore from '../store/Counter';
 import Transition from "react-transition-group/Transition";
-import * as Animated from 'react-dom-animated';
+import * as Animated from 'animated/lib/targets/react-dom';
 import { HeadTag } from '../lib/react-head';
 
 type CounterProps = CounterStore.CounterState & typeof CounterStore.actionCreators;
@@ -65,10 +65,9 @@ class Count extends React.Component<CountProps, CountState> {
             // opacity: this.state.animate,
             transform: Animated.template`
                 rotateX(${this.state.animate.interpolate({
-                inputRange: [0, 1],
-                outputRange: ["90deg", "0deg"]
-            })})
-            `
+                    inputRange: [0, 1],
+                    outputRange: ["90deg", "0deg"]
+                })})`
         };        
         return (
             <Transition timeout={5000}>

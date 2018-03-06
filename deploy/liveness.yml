@@ -1,0 +1,11 @@
+livenessProbe:
+  httpGet:
+    scheme: HTTPS
+    path: /info
+    port: 443
+    httpHeaders:
+    - name: Host
+      value: rrod.sikkema.com
+  initialDelaySeconds: 45
+  periodSeconds: 30
+  timeoutSeconds: 5

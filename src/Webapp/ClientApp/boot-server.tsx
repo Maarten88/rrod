@@ -58,7 +58,24 @@ export default createServerRenderer(params => {
             });
             return;
         }
-        const GlobalScript = ({ state }) => <script dangerouslySetInnerHTML={{ __html: "window.initialReduxState = " + JSON.stringify(state) }} />
+        const InlineScript = ({ script }) => <script dangerouslySetInnerHTML={{ __html: script }} />
+
+        const Aux = (props) => {
+            return props.children;
+        };
+
+        //class Aux extends React.PureComponent<{}> {
+        //    render() {
+        //        return this.props.children;
+        //    }
+        //}
+
+        //class IfIEComment extends React.PureComponent<{ condition: string }> {
+        //    render() {
+        //        return `<!--[if ${this.props.condition}]>${renderToStaticMarkup(this.props.children as any)}<![endif]-->`;
+        //    }
+        //}
+        //const comment = '<!--[if lte IE 9]><script src="/dist/polyfill.js"></script><![endif]-->';
 
         const Html = ({ headTags, appString, state }) => (
             <html lang="en">
@@ -67,13 +84,15 @@ export default createServerRenderer(params => {
                     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
                     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                     <link rel="stylesheet" href="/dist/site.css" />
+                    {/* <script src="https://cdn.polyfill.io/v2/polyfill.min.js"></script> */}
                     <base href="/" />
+                    {/* <InlineScript script="delete window.Symbol;" /> */}
                     {headTags}
                 </head>
                 <body>
                     <div id="react-app" dangerouslySetInnerHTML={{__html: appString}} />
-                    <GlobalScript state={state} />
-                    <script src="/dist/vendor.js"></script>
+                    <InlineScript script={"window.initialReduxState = " + JSON.stringify(state)} />
+                    {/* <script src="/dist/vendor.js"></script> */}
                     <script src="/dist/main-client.js"></script>
                 </body>
             </html>

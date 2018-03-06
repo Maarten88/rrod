@@ -97,8 +97,10 @@ class Contact extends React.Component<ContactProps, ContactModel> {
                     </Well>
                 </Col>
                 <Col md={6}>
-                    <Panel header={
-                        <h3>Adres</h3>}>
+                    <Panel>
+                        <Panel.Heading>
+                            <h3>Adres</h3>
+                        </Panel.Heading>
                         <div className="text-center header">
                             <div>
                                 Street address<br />

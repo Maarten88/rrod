@@ -38,6 +38,7 @@ export const actionCreators = {
             return;
 
         const transportType = signalR.TransportType.WebSockets;
+        /// const transportType = signalR.TransportType.LongPolling; // for IE9
         // const logger = new signalR.ConsoleLogger(signalR.LogLevel.Warning);
         // const options = { transport: transportType /*, logging: logger */};
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-declare module "react-dom-animated" {
+declare module "animated/lib" {
 
     export type EndResult = {finished: boolean};
     export type EndCallback = (result: EndResult) => void;
@@ -120,6 +120,4 @@ declare module "react-dom-animated" {
     class AnimatedComponent extends React.Component<{style: any, className: string}> { 
         constructor(props: any);
     }
-    export const createAnimatedComponent: (Component: React.ReactType) => typeof AnimatedComponent;
-    export const div: React.ComponentClass<React.HTMLAttributes<HTMLDivElement>>
 }
