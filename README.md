@@ -36,7 +36,7 @@ This project demonstrates many technologies in context:
 - Kubernetes Yaml files for deployment to a Kubernetes environment, such as Azure AKS (add your own configmaps/secrets)
 
 ## See it in action
-- I deployed (a version of this all to Azure AKS here)[https://rrod.sikkema.com]. It seems to work, however there are some warnings about broken connections in the logs that do not happen when running locally. If someone can teach me how to correctly configure the loadbalancer in Azure AKS with WebSockets and TLS, please help me improve.
+- I deployed [a version of this all to Azure AKS here](https://rrod.sikkema.com). It seems to work, however there are some warnings about broken connections in the logs that do not happen when running locally. If someone can teach me how to correctly configure the loadbalancer in Azure AKS with WebSockets and TLS, please help me improve.
 
 This code should be considered experimental. It mostly works, however the project has rough edges and has not been thoroughly tested. 
 I welcome feedback!
