@@ -161,6 +161,8 @@
                 "443:443",
                 "-p",
                 "80:80",
+                "-p",
+                "5000:5000",
                 "--name",
                 "webapp.debug_1", 
                 "webapp.debug:latest"
