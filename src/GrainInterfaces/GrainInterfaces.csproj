@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <NetStandardImplicitPackageVersion>2.0.0</NetStandardImplicitPackageVersion>
     <GenerateFullPaths>true</GenerateFullPaths>
     <AssemblyName>GrainInterfaces</AssemblyName>
     <PackageId>GrainInterfaces</PackageId>
@@ -11,8 +10,8 @@
   <ItemGroup>
     <PackageReference Include="System.Reactive.Linq" Version="3.1.1" />
     <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
-    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="2.0.0-rc1" />
-    <PackageReference Include="Microsoft.Orleans.OrleansCodeGenerator.Build" Version="2.0.0-rc1" />
+    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="2.0.0-rc2" />
+    <PackageReference Include="Microsoft.Orleans.OrleansCodeGenerator.Build" Version="2.0.0-rc2" />
   </ItemGroup>
   
 </Project>

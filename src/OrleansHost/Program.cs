@@ -7,18 +7,16 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Hosting;
-using Orleans.Runtime.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
 using Orleans.Runtime;
-using Orleans.Storage;
 using Orleans.Providers.Streams.AzureQueue;
+using Orleans.Configuration;
 
 namespace OrleansHost
 {
@@ -46,7 +44,7 @@ namespace OrleansHost
                 .AddDockerSecrets("/run/secrets", optional: true)   // we can pas connectionstring as a docker secret
                 .AddUserSecrets<Program>(optional: true)            // for development
                 .AddEnvironmentVariables("RROD_")                   // can override all settings (i.e. URLS) by passing an environment variable
-                .Build();  
+                .Build();
 
             LoggerFactory.AddConsole(config.GetSection("Logging"));
             LoggerFactory.AddDebug();
@@ -59,38 +57,51 @@ namespace OrleansHost
                 logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} settings");
             }
 
-            silo = new SiloHostBuilder()
-                .ConfigureSiloName(config["Id"])
-                .Configure(options => options.ClusterId = config["ClusterId"])
-                .ConfigureServices((context, services) =>
-                {
-                    services.AddOptions();
-                    services.TryAdd(ServiceDescriptor.Singleton<ILoggerFactory, LoggerFactory>());
-                    services.TryAdd(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(Logger<>)));
-                    services.Configure<ConnectionStrings>(config.GetSection("ConnectionStrings"));
-                    var reduxConnectionString = config.GetConnectionString("ReduxConnectionString");
-                    services.AddSingleton(new ReduxTableStorage<CertState>(reduxConnectionString));
-                    services.AddSingleton(new ReduxTableStorage<UserState>(reduxConnectionString));
-                    services.AddSingleton(new ReduxTableStorage<CounterState>(reduxConnectionString));
-                    services.AddSingleton(new ReduxTableStorage<StringStoreState>(reduxConnectionString));
-                })
-                .ConfigureApplicationParts(parts =>
-                {
-                    parts.AddApplicationPart(typeof(CounterGrain).Assembly).WithReferences();
-                    parts.AddApplicationPart(typeof(AzureQueueDataAdapterV2).Assembly).WithReferences();
-                })
-                .AddAzureTableGrainStorageAsDefault(options => options.ConnectionString = config.GetConnectionString("DataConnectionString"))
-                .UseAzureStorageClustering(options => options.ConnectionString = config.GetConnectionString("DataConnectionString"))
-                .UseAzureTableReminderService(options => options.ConnectionString = config.GetConnectionString("DataConnectionString"))
-                .AddAzureTableGrainStorage("PubSubStore", options => options.ConnectionString = config.GetConnectionString("DataConnectionString"))
-                .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", options =>
-                {
-                    options.ConnectionString = config.GetConnectionString("DataConnectionString");
-                    options.ClusterId = config["ClusterId"];
-                })
-                .Build();
+            try
+            {
+                string connectionString = config.GetConnectionString("DataConnectionString");
+                silo = new SiloHostBuilder()
+                    // .ConfigureSiloName(config["Id"])
+                    .Configure<ClusterOptions>(options => options.ClusterId = config["ClusterId"])
+                    .UseAzureStorageClustering(options => options.ConnectionString = connectionString)
+                    .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000)
+                    .UseAzureTableReminderService(options => options.ConnectionString = connectionString)
+                    .ConfigureServices((context, services) =>
+                    {
+                        services.AddOptions();
+                        services.TryAdd(ServiceDescriptor.Singleton<ILoggerFactory, LoggerFactory>());
+                        services.TryAdd(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(Logger<>)));
+                        services.Configure<ConnectionStrings>(config.GetSection("ConnectionStrings"));
+                        var reduxConnectionString = config.GetConnectionString("ReduxConnectionString");
+                        services.AddSingleton(new ReduxTableStorage<CertState>(reduxConnectionString));
+                        services.AddSingleton(new ReduxTableStorage<UserState>(reduxConnectionString));
+                        services.AddSingleton(new ReduxTableStorage<CounterState>(reduxConnectionString));
+                        services.AddSingleton(new ReduxTableStorage<StringStoreState>(reduxConnectionString));
+                    })
+                    .ConfigureApplicationParts(parts =>
+                    {
+                        parts.AddApplicationPart(typeof(CounterGrain).Assembly).WithReferences();
+                        parts.AddApplicationPart(typeof(AzureQueueDataAdapterV2).Assembly).WithReferences();
+                    })
+                    .AddAzureTableGrainStorageAsDefault(options => options.ConnectionString = connectionString)
+                    .AddAzureTableGrainStorage("PubSubStore", options => options.ConnectionString = connectionString)
+                    .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", ob =>
+                    {
+                        ob.Configure(options =>
+                        {
+                            options.ConnectionString = connectionString;
+                            options.ClusterId = config["ClusterId"];
+                        });
+                    })
+                    .Build();
 
-            await StartSilo();
+                await StartSilo();
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Error initializing Silo: " + e.Message);
+                throw;
+            }
 
             AssemblyLoadContext.Default.Unloading += context =>
             {

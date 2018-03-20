@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Orleans.Concurrency;
+using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Providers.Streams.AzureQueue;
 using Orleans.Runtime;
@@ -60,6 +61,9 @@ namespace Webapp
                 logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} settings");
             }
 
+            // ServicePointManager.CheckCertificateRevocationList = false;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+            ServicePointManager.DefaultConnectionLimit = 20;
 
             int attempt = 0;
             int initializeAttemptsBeforeFailing = 7;
@@ -72,14 +76,14 @@ namespace Webapp
                     {
                         logging.AddConfiguration(config);
                     })
-                    .ConfigureCluster(options =>
+                    .Configure<ClusterOptions>(options => options.ClusterId = config["ClusterId"])
+                    .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", ob =>
                     {
-                        options.ClusterId = config["ClusterId"];
-                    })
-                    .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", options =>
-                    {
-                        options.ConnectionString = config.GetConnectionString("DataConnectionString");
-                        options.ClusterId = config["ClusterId"];
+                        ob.Configure(options =>
+                        {
+                            options.ConnectionString = config.GetConnectionString("DataConnectionString");
+                            options.ClusterId = config["ClusterId"];
+                        });
                     })
                     .ConfigureApplicationParts(parts =>
                     {
@@ -212,7 +216,14 @@ namespace Webapp
                             logger.LogInformation($"Getting certificate for domain {domains.First()} on port {port}");
 
                             // Request a new certificate with Let's Encrypt and store it for next time
-                            certificate = await certificateManager.GetCertificate(domains);
+                            try 
+                            {
+                                certificate = await certificateManager.GetCertificate(domains);
+                            }
+                            catch (Exception e)
+                            {
+                                logger.LogCritical(e, $"Exception getting certificate for domain {domains.First()}. PfxPassword configured incorrectly?");
+                            }
                             if (certificate == null)
                             {
                                 // It didn't work - create a temporary certificate so that we can still start with an untrusted certificate
@@ -300,6 +311,8 @@ namespace Webapp
                                     {
                                         logger.LogInformation($"Kestrel config: Listen on address {address.ToString()}:{port}, certificate {(certificate == null ? "NULL" : certificate.Subject.ToString())}");
                                         listenOptions.UseHttps(certificate);
+                                        listenOptions.NoDelay = false;
+                                        // listenOptions.UseConnectionLogging();
                                     }
                                     else
                                     {
