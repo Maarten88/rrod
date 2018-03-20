@@ -14,7 +14,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.6" />
     <PackageReference Include="Microsoft.Orleans.Client" Version="2.0.0-rc2" />
     <PackageReference Include="Microsoft.Orleans.OrleansAzureUtils" Version="2.0.0-rc2" />
     <PackageReference Include="IdentityServer4" Version="2.1.1" />
