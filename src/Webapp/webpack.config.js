@@ -3,7 +3,7 @@ const webpack = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const merge = require('webpack-merge');
 const CompressionPlugin = require("compression-webpack-plugin");
-// const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
+const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 module.exports = (env) => {
@@ -24,7 +24,7 @@ module.exports = (env) => {
             ]
         },
         plugins: [
-            // new CheckerPlugin()
+            new CheckerPlugin()
         ]
      });
 
@@ -44,20 +44,20 @@ module.exports = (env) => {
                     include: /ClientApp/,
                     use: [
                         {
-                            loader: 'ts-loader',
-                            options: {
-                                configFile: path.join(__dirname, 'tsconfig.client.json'),
-                                onlyCompileBundledFiles: true,
-                                instance: 'ts-client',
-                                context: __dirname,
-                            }
-                            //loader: 'awesome-typescript-loader',
+                            //loader: 'ts-loader',
                             //options: {
-                            //    configFileName: 'tsconfig.client.json',
-                            //    silent: true,
-                            //    useCache: false,
-                            //    instance: 'at-client'
+                            //    configFile: path.join(__dirname, 'tsconfig.client.json'),
+                            //    onlyCompileBundledFiles: true,
+                            //    instance: 'ts-client',
+                            //    context: __dirname,
                             //}
+                            loader: 'awesome-typescript-loader',
+                            options: {
+                                configFileName: 'tsconfig.client.json',
+                                silent: true,
+                                useCache: true,
+                                instance: 'at-client'
+                            }
                         }
                     ]
                 },
@@ -130,19 +130,19 @@ module.exports = (env) => {
                     include: /ClientApp/,
                     use: [
                         {
-                            loader: 'ts-loader',
-                            options: {
-                                configFile: 'tsconfig.server.json',
-                                onlyCompileBundledFiles: true,
-                                instance: 'ts-server'
-                            }
-                            //loader: 'awesome-typescript-loader',
+                            //loader: 'ts-loader',
                             //options: {
-                            //    configFileName: 'tsconfig.server.json',
-                            //    silent: true,
-                            //    useCache: false,
-                            //    instance: 'at-server'
+                            //    configFile: 'tsconfig.server.json',
+                            //    onlyCompileBundledFiles: true,
+                            //    instance: 'ts-server'
                             //}
+                            loader: 'awesome-typescript-loader',
+                            options: {
+                                configFileName: 'tsconfig.server.json',
+                                silent: true,
+                                useCache: true,
+                                instance: 'at-server'
+                            }
                         }
                     ]
                 },

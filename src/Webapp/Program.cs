@@ -76,13 +76,15 @@ namespace Webapp
                     {
                         logging.AddConfiguration(config);
                     })
-                    .Configure<ClusterOptions>(options => options.ClusterId = config["ClusterId"])
+                    .Configure<ClusterOptions>(options => {
+                        options.ClusterId = config["ClusterId"];
+                        options.ServiceId = "rrod";
+                    })
                     .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", ob =>
                     {
                         ob.Configure(options =>
                         {
                             options.ConnectionString = config.GetConnectionString("DataConnectionString");
-                            options.ClusterId = config["ClusterId"];
                         });
                     })
                     .ConfigureApplicationParts(parts =>

@@ -61,8 +61,10 @@ namespace OrleansHost
             {
                 string connectionString = config.GetConnectionString("DataConnectionString");
                 silo = new SiloHostBuilder()
-                    // .ConfigureSiloName(config["Id"])
-                    .Configure<ClusterOptions>(options => options.ClusterId = config["ClusterId"])
+                    .Configure<ClusterOptions>(options => {
+                        options.ClusterId = config["ClusterId"];
+                        options.ServiceId = "rrod";
+                    })
                     .UseAzureStorageClustering(options => options.ConnectionString = connectionString)
                     .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000)
                     .UseAzureTableReminderService(options => options.ConnectionString = connectionString)
@@ -90,7 +92,6 @@ namespace OrleansHost
                         ob.Configure(options =>
                         {
                             options.ConnectionString = connectionString;
-                            options.ClusterId = config["ClusterId"];
                         });
                     })
                     .Build();

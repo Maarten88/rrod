@@ -2,10 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <NetStandardImplicitPackageVersion>2.0.0</NetStandardImplicitPackageVersion>
     <GenerateFullPaths>true</GenerateFullPaths>
-    <AssemblyName>Grains</AssemblyName>
-    <PackageId>Grains</PackageId>
     <UserSecretsId>rrod-secrets</UserSecretsId>
   </PropertyGroup>
 
@@ -30,8 +27,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.0.0" />
     <PackageReference Include="WindowsAzure.Storage" Version="8.7.0" />
-    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="2.0.0-rc2" />
-    <PackageReference Include="Microsoft.Orleans.OrleansCodeGenerator.Build" Version="2.0.0-rc2" />
+    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Orleans.OrleansCodeGenerator.Build" Version="2.0.0" />
     <PackageReference Include="Certes" Version="1.1.3" />
     <PackageReference Include="MimeKit" Version="2.0.1" />
     <PackageReference Include="MailKit" Version="2.0.1" />

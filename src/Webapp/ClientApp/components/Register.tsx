@@ -53,7 +53,7 @@ class Register extends React.Component<RegisterProps, RegisterModel> {
                     <Well bsSize="sm">
                         <Form horizontal action="/contact" method="post" onSubmit={this.submit}>
                             <fieldset>
-                                <legend className="text-center header">Registration form</legend>
+                                <legend className="text-center header">Register your account</legend>
                                 <FormGroup>
                                     <Col md={10} mdOffset={1}>
                                         <FormControl name="email" type="text" onChange={this.handleChange} value={this.state.email} placeholder="email@domain.com" />
@@ -67,7 +67,7 @@ class Register extends React.Component<RegisterProps, RegisterModel> {
 
                                 <FormGroup>
                                     <Col md={10} mdOffset={1}>
-                                        <FormControl name="confirmPassword" type="password" onChange={this.handleChange} value={this.state.confirmPassword} placeholder="Bevestig password" />
+                                        <FormControl name="confirmPassword" type="password" onChange={this.handleChange} value={this.state.confirmPassword} placeholder="Confirm password" />
                                     </Col>
                                 </FormGroup>
 
