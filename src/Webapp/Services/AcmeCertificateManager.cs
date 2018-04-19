@@ -9,6 +9,7 @@ using System.Linq;
 using Certes.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Hosting;
+using Certes.Acme.Resource;
 
 namespace Microsoft.AspNetCore.Hosting
 {
@@ -130,10 +131,10 @@ namespace Microsoft.AspNetCore.Hosting
                     do
                     {
                         // Wait for ACME server to validate the identifier
-                        await Task.Delay(5000 * tryCount);
+                        await Task.Delay(5000);
                         authz = await client.GetAuthorization(httpChallenge.Location);
                     }
-                    while (authz.Data.Status == EntityStatus.Pending && ++tryCount <= 5);
+                    while (authz.Data.Status == EntityStatus.Pending && ++tryCount <= 10);
 
                     if (authz.Data.Status != EntityStatus.Valid)
                     {

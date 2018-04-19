@@ -13,8 +13,9 @@
     "IncludeScopes": false,
     "LogLevel": {
       "Default": "Information",
-      "System": "Warning",
-      "Microsoft": "Information"
+      "Microsoft": "Warning",
+      "Orleans": "Warning",
+      "Runtime": "Warning"
     }
   }
 }

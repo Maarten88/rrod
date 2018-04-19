@@ -8,8 +8,8 @@
     "IncludeScopes": false,
     "LogLevel": {
       "Default": "Information",
-      "System": "Warning",
-      "Microsoft": "Information"
+      "Orleans": "Warning",
+      "Runtime": "Warning"
     }
   }
 }

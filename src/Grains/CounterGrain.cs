@@ -49,10 +49,16 @@ namespace Grains
                     this.logger.LogError(e, "CounterGrain: Exception in store subscription stream");
                 });
 
+            var loadedState = await this.GetState();
+            if (loadedState.Started)
+            {
+                this.StartCounterTimerInternal();
+            }
         }
 
         public override async Task OnDeactivateAsync()
         {
+            this.logger.LogWarning($"Countergrain {this.GetPrimaryKeyString()} stopping...");
             // clean up when grain goes away (nobody is looking at us anymore)
             this.storeSubscription.Dispose();
             this.storeSubscription = null;
@@ -73,14 +79,11 @@ namespace Grains
             await this.WriteStateAsync();
         }
 
-        public async Task StartCounterTimer()
+
+        void StartCounterTimerInternal()
         {
             if (this.timer != null)
                 throw new Exception("Can't start: already started");
-
-            await this.Dispatch(new StartCounterAction());
-            await this.actionsToClientStream.OnNextAsync(new CounterStartedAction());
-            await this.WriteStateAsync();
 
             this.timer = this.RegisterTimer(async (state) => {
                 var action = new IncrementCounterAction();
@@ -92,20 +95,32 @@ namespace Grains
                 await this.Dispatch(action);
                 await this.WriteStateAsync();
             }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
-
-            await this.actionsToClientStream.OnNextAsync(new CounterStartedAction());
         }
 
-        public async Task StopCounterTimer()
+        public async Task StartCounterTimer()
+        {
+            StartCounterTimerInternal();
+
+            await this.Dispatch(new StartCounterAction());
+            await this.actionsToClientStream.OnNextAsync(new CounterStartedAction());
+            await this.WriteStateAsync();
+        }
+
+        void StopTimerInternal()
         {
             if (this.timer == null)
                 throw new Exception("Can't stop: not started");
 
+            this.timer.Dispose();
+            this.timer = null;
+        }
+
+        public async Task StopCounterTimer()
+        {
+            StopTimerInternal();
             await this.Dispatch(new StopCounterAction());
             await this.actionsToClientStream.OnNextAsync(new CounterStoppedAction());
             await this.WriteStateAsync();
-            this.timer.Dispose();
-            this.timer = null;
         }
 
         public async Task Process(IAction action)

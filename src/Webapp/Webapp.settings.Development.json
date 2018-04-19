@@ -21,9 +21,10 @@
   "Logging": {
     "IncludeScopes": false,
     "LogLevel": {
-      "Default": "Debug",
-      "System": "Information",
-      "Microsoft": "Debug"
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Orleans": "Warning",
+      "Runtime": "Warning"
     }
   }
 }

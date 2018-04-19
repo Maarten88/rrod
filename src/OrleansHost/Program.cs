@@ -22,59 +22,55 @@ namespace OrleansHost
 {
     internal class Program
     {
-        private static ISiloHost silo;
-        private static readonly ManualResetEvent SiloStopped = new ManualResetEvent(false);
-        private static readonly LoggerFactory LoggerFactory = new LoggerFactory();
+        private static readonly ManualResetEvent StopSilo = new ManualResetEvent(false);
 
         private static async Task Main(string[] args)
         {
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
-            var config = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddInMemoryCollection(new Dictionary<string, string> // add default settings, that will be overridden by commandline
-                    {
-                        {"Id", "OrleansHost"},
-                        {"Version", "1.0.0"},
-                        {"ClusterId", "rrod-cluster"},
-                    })
-                .AddCommandLine(args)
-                .AddJsonFile("OrleansHost.settings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"OrleansHost.settings.{environment}.json", optional: true, reloadOnChange: true)
-                .AddJsonFile("/run/config/OrleansHost.settings.json", optional: true, reloadOnChange: true)
-                .AddDockerSecrets("/run/secrets", optional: true)   // we can pas connectionstring as a docker secret
-                .AddUserSecrets<Program>(optional: true)            // for development
-                .AddEnvironmentVariables("RROD_")                   // can override all settings (i.e. URLS) by passing an environment variable
-                .Build();
 
-            LoggerFactory.AddConsole(config.GetSection("Logging"));
-            LoggerFactory.AddDebug();
-            var logger = LoggerFactory.CreateLogger<Program>();
-
-            logger.LogWarning($"Starting Orleans silo in {environment} environment...");
-
-            foreach (var provider in config.Providers)
-            {
-                logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} settings");
-            }
-
+            ISiloHost silo;
             try
             {
-                string connectionString = config.GetConnectionString("DataConnectionString");
+                // string connectionString = config.GetConnectionString("DataConnectionString");
                 silo = new SiloHostBuilder()
-                    .Configure<ClusterOptions>(options => {
-                        options.ClusterId = config["ClusterId"];
-                        options.ServiceId = "rrod";
+                    .UseEnvironment(environment)
+                    .ConfigureLogging((context, logging) =>
+                    {
+                        logging.AddConfiguration(context.Configuration.GetSection("Logging"));
+                        logging.AddConsole();
+                        logging.AddDebug();
                     })
-                    .UseAzureStorageClustering(options => options.ConnectionString = connectionString)
+                    .ConfigureAppConfiguration((context, builder) => {
+                        builder
+                            .SetBasePath(Directory.GetCurrentDirectory())
+                            .AddInMemoryCollection(new Dictionary<string, string> // add default settings, that will be overridden by commandline
+                            {
+                                {"Id", "OrleansHost"},
+                                {"Version", "1.0.0"},
+                                {"ClusterId", "rrod-cluster"},
+                                {"ServiceId", "rrod"}
+                            })
+                            .AddCommandLine(args)
+                            .AddJsonFile("OrleansHost.settings.json", optional: true, reloadOnChange: true)
+                            .AddJsonFile($"OrleansHost.settings.{environment}.json", optional: true, reloadOnChange: true)
+                            .AddJsonFile("/run/config/OrleansHost.settings.json", optional: true, reloadOnChange: true)
+                            .AddDockerSecrets("/run/secrets", optional: true)   // we can pas connectionstring as a docker secret
+                            .AddUserSecrets<Program>(optional: true)            // for development
+                            .AddEnvironmentVariables("RROD_");                  // can override all settings (i.e. URLS) by passing an environment variable
+                    })
+                    .AddStartupTask<SettingsLogger>()
+                    .UseAzureStorageClustering(builder => builder.Configure((AzureStorageClusteringOptions options, IConfiguration cfg) => options.ConnectionString = cfg.GetConnectionString("DataConnectionString")))
                     .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000)
-                    .UseAzureTableReminderService(options => options.ConnectionString = connectionString)
                     .ConfigureServices((context, services) =>
                     {
-                        services.AddOptions();
-                        services.TryAdd(ServiceDescriptor.Singleton<ILoggerFactory, LoggerFactory>());
-                        services.TryAdd(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(Logger<>)));
-                        services.Configure<ConnectionStrings>(config.GetSection("ConnectionStrings"));
+                        var config = context.Configuration;
+
+                        var dataConnectionString = config.GetConnectionString("DataConnectionString");
                         var reduxConnectionString = config.GetConnectionString("ReduxConnectionString");
+
+                        services.AddOptions();
+                        services.Configure<ClusterOptions>(config);
+                        services.UseAzureTableReminderService(options => options.ConnectionString = dataConnectionString);
                         services.AddSingleton(new ReduxTableStorage<CertState>(reduxConnectionString));
                         services.AddSingleton(new ReduxTableStorage<UserState>(reduxConnectionString));
                         services.AddSingleton(new ReduxTableStorage<CounterState>(reduxConnectionString));
@@ -85,40 +81,41 @@ namespace OrleansHost
                         parts.AddApplicationPart(typeof(CounterGrain).Assembly).WithReferences();
                         parts.AddApplicationPart(typeof(AzureQueueDataAdapterV2).Assembly).WithReferences();
                     })
-                    .AddAzureTableGrainStorageAsDefault(options => options.ConnectionString = connectionString)
-                    .AddAzureTableGrainStorage("PubSubStore", options => options.ConnectionString = connectionString)
-                    .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", ob =>
-                    {
-                        ob.Configure(options =>
-                        {
-                            options.ConnectionString = connectionString;
-                        });
-                    })
+                    .AddAzureTableGrainStorageAsDefault(builder => builder.Configure((AzureTableStorageOptions options, IConfiguration cfg) => options.ConnectionString = cfg.GetConnectionString("DataConnectionString")))
+                    .AddAzureTableGrainStorage("PubSubStore", builder => builder.Configure((AzureTableStorageOptions options, IConfiguration cfg) => options.ConnectionString = cfg.GetConnectionString("DataConnectionString")))
+                    .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", builder => builder.Configure((AzureQueueOptions options, IConfiguration cfg) => options.ConnectionString = cfg.GetConnectionString("DataConnectionString"))
+                    )
                     .Build();
-
-                await StartSilo();
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Error initializing Silo: " + e.Message);
+                Console.WriteLine("Error building silo host: " + e.Message);
                 throw;
             }
 
+            // If our process is stopped, close the silo nicely so active grains get deactivated
             AssemblyLoadContext.Default.Unloading += context =>
             {
-                Task.Run(StopSilo);
-                SiloStopped.WaitOne();
+                StopSilo.Set();
             };
 
-            SiloStopped.WaitOne();
-        }
+            // Make Ctrl-C stop our process
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                Environment.Exit(0);
+            };
 
-        private static async Task StartSilo()
-        {
             try
             {
+                Console.WriteLine("Silo starting...");
                 await silo.StartAsync();
                 Console.WriteLine("Silo started");
+
+                StopSilo.WaitOne();
+
+                Console.WriteLine("Silo stopping...");
+                await silo.StopAsync();
+                Console.WriteLine("Silo Stopped");
             }
             catch (OrleansLifecycleCanceledException e)
             {
@@ -129,12 +126,25 @@ namespace OrleansHost
                 Console.WriteLine("Silo could not be started with exception: " + e.Message);
             }
         }
+    }
 
-        private static async Task StopSilo()
+    class SettingsLogger : IStartupTask
+    {
+        readonly ILogger logger;
+        readonly IConfigurationRoot config;
+
+        public SettingsLogger(IConfiguration config, ILogger<SettingsLogger> logger)
         {
-            await silo.StopAsync();
-            Console.WriteLine("Silo stopped");
-            SiloStopped.Set();
+            this.config = config as IConfigurationRoot;
+            this.logger = logger;
+        }
+        public Task Execute(CancellationToken cancellationToken)
+        {
+            foreach (var provider in config.Providers)
+            {
+                logger.LogInformation($"Config Provider {provider.GetType().Name}: {provider.GetChildKeys(Enumerable.Empty<string>(), null).Count()} settings");
+            }
+            return Task.CompletedTask;
         }
     }
 }

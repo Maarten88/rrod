@@ -10,28 +10,21 @@ using System.Threading.Tasks;
 using MimeKit;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace Grains
 {
-    public class ConnectionStrings
-    {
-        public string DataConnectionString { get; set; }
-        public string ReduxConnectionString { get; set; }
-        public string SmtpConnectionString { get; set; }
-    }
-
-
     [StatelessWorker]
     public class EmailGrain : Grain, IEmailGrain
     {
         readonly SmtpConnectionString smtpSettings;
         readonly ILogger<EmailGrain> logger;
 
-        public EmailGrain(IOptions<ConnectionStrings> connectionStrings, ILogger<EmailGrain> logger)
+        public EmailGrain(IConfiguration config, ILogger<EmailGrain> logger)
         {
             this.smtpSettings = new SmtpConnectionString()
             {
-                ConnectionString = connectionStrings.Value.SmtpConnectionString
+                ConnectionString = config.GetConnectionString("SmtpConnectionString")
             };
             this.logger = logger;
         }

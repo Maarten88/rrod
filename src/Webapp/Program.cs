@@ -40,6 +40,7 @@ namespace Webapp
                     {"Id", "Webapp"},
                     {"Version", "1.0.0"},
                     {"ClusterId", "rrod-cluster"},
+                    {"ServiceId", "rrod"}
                 })
                 .AddCommandLine(args)
                 .AddJsonFile("Webapp.settings.json", optional: true, reloadOnChange: true)
@@ -67,26 +68,19 @@ namespace Webapp
 
             int attempt = 0;
             int initializeAttemptsBeforeFailing = 7;
-            IClusterClient clusterClient;
+            IClusterClient clusterClient = null;
             while (true)
             {
                 // Initialize orleans client
                 clusterClient = new ClientBuilder()
-                    .ConfigureLogging(logging =>
+                    .ConfigureServices((context, services) =>
                     {
-                        logging.AddConfiguration(config);
+                        // services.AddOptions();
+                        services.AddSingleton<ILoggerFactory>(loggerFactory);
+                        // services.AddSingleton<IConfiguration>(config);
+                        services.Configure<ClusterOptions>(config);
                     })
-                    .Configure<ClusterOptions>(options => {
-                        options.ClusterId = config["ClusterId"];
-                        options.ServiceId = "rrod";
-                    })
-                    .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", ob =>
-                    {
-                        ob.Configure(options =>
-                        {
-                            options.ConnectionString = config.GetConnectionString("DataConnectionString");
-                        });
-                    })
+                    .AddAzureQueueStreams<AzureQueueDataAdapterV2>("Default", builder => builder.Configure(options => options.ConnectionString = config.GetConnectionString("DataConnectionString")))
                     .ConfigureApplicationParts(parts =>
                     {
                         parts.AddApplicationPart(typeof(ICounterGrain).Assembly).WithReferences();
@@ -101,14 +95,22 @@ namespace Webapp
                     logger.LogInformation("Client successfully connected to silo host");
                     break;
                 }
-                catch (SiloUnavailableException)
+                catch (OrleansException)
                 {
                     attempt++;
                     logger.LogWarning($"Attempt {attempt} of {initializeAttemptsBeforeFailing} failed to initialize the Orleans client.");
+
+                    if (clusterClient != null)
+                    {
+                        clusterClient.Dispose();
+                        clusterClient = null;
+                    }
+
                     if (attempt > initializeAttemptsBeforeFailing)
                     {
                         throw;
                     }
+
                     // Wait 4 seconds before retrying
                     await Task.Delay(TimeSpan.FromSeconds(4));
                 }
@@ -128,44 +130,39 @@ namespace Webapp
             var needPort80 = endpoints.Any(endpoint => (endpoint.Value.Port ?? (endpoint.Value.Scheme.Equals("https", StringComparison.InvariantCultureIgnoreCase) ? 443 : 80)) == 80);
             var certs = new Dictionary<string, X509Certificate2>();
 
+            var acmeOptions = new AcmeOptions
+            {
+                GetChallengeResponse = async (challenge) =>
+                {
+                    var cacheGrain = clusterClient.GetGrain<ICacheGrain<string>>(challenge);
+                    var response = await cacheGrain.Get();
+                    return response.Value;
+                },
+                SetChallengeResponse = async (challenge, response) =>
+                {
+                    var cacheGrain = clusterClient.GetGrain<ICacheGrain<string>>(challenge);
+                    await cacheGrain.Set(new Immutable<string>(response), TimeSpan.FromHours(2));
+                },
+                StoreCertificate = async (string domainName, byte[] certData) =>
+                {
+                    var certGrain = clusterClient.GetGrain<ICertGrain>(domainName);
+                    await certGrain.UpdateCertificate(certData);
+                },
+                RetrieveCertificate = async (domainName) =>
+                {
+                    var certGrain = clusterClient.GetGrain<ICertGrain>(domainName);
+                    var certData = await certGrain.GetCertificate();
+                    return certData.Value;
+                }
+            };
+
             if (hasHttps)
             {
                 logger.LogWarning($"At least one https endpoint is present. Initialize Acme endpoint.");
-                var acmeOptions = new AcmeOptions
-                {
-                    GetChallengeResponse = async (challenge) =>
-                    {
-                        var cacheGrain = clusterClient.GetGrain<ICacheGrain<string>>(challenge);
-                        var response = await cacheGrain.Get();
-                        return response.Value;
-                    },
-                    SetChallengeResponse = async (challenge, response) =>
-                    {
-                        var cacheGrain = clusterClient.GetGrain<ICacheGrain<string>>(challenge);
-                        await cacheGrain.Set(new Immutable<string>(response), TimeSpan.FromHours(2));
-                    },
-                    StoreCertificate = async (string domainName, byte[] certData) =>
-                    {
-                        var certGrain = clusterClient.GetGrain<ICertGrain>(domainName);
-                        await certGrain.UpdateCertificate(certData);
-                    },
-                    RetrieveCertificate = async (domainName) =>
-                    {
-                        var certGrain = clusterClient.GetGrain<ICertGrain>(domainName);
-                        var certData = await certGrain.GetCertificate();
-                        return certData.Value;
-                    }
-                };
 
                 var acmeHost = new WebHostBuilder()
-                    // .UseConfiguration(config)
-                    .ConfigureLogging((context, factory) =>
-                    {
-                        factory.AddConfiguration(context.Configuration.GetSection("Logging"));
-                        factory.AddConsole();
-                        factory.AddDebug();
-                    })
                     .UseEnvironment(environment)
+                    .UseConfiguration(config)
                     .ConfigureServices(services =>
                     {
                         services.AddSingleton<IClusterClient>(clusterClient);
@@ -180,7 +177,6 @@ namespace Webapp
                     .UseKestrel(options => {
                         options.Listen(IPAddress.Any, 80);
                     })
-                    // .UseLoggerFactory(loggerFactory)
                     .Configure(app =>
                     {
                         app.UseAcmeResponse();
@@ -189,7 +185,7 @@ namespace Webapp
 
                 try
                 {
-                    await acmeHost.StartAsync();
+                    await acmeHost.StartAsync().ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -197,7 +193,8 @@ namespace Webapp
                     logger.LogError("Ignoring noncritical error (stop W3SVC or Skype to fix this), continuing...");
                 }
 
-                var certificateManager = new AcmeCertificateManager(Options.Create(acmeOptions));
+                var certificateManager = acmeHost.Services.GetRequiredService<AcmeCertificateManager>();
+                // var certificateManager = new AcmeCertificateManager(Options.Create(acmeOptions));
                 foreach (var endpoint in endpoints)
                 {
                     var endpointConfig = endpoint.Value;
@@ -250,15 +247,17 @@ namespace Webapp
             }
 
             var webHost = new WebHostBuilder()
-                // .UseConfiguration(config)
+                .UseEnvironment(environment)
+                .UseConfiguration(config)
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton<IConfiguration>(config);
+                    // services.AddSingleton<IConfiguration>(config);
                     services.AddSingleton<IClusterClient>(clusterClient);
                     services.AddSingleton<ILoggerFactory>(loggerFactory);
+                    services.Configure<AcmeSettings>(config.GetSection(nameof(AcmeSettings)));
+                    services.AddAcmeCertificateManager(acmeOptions);
                 })
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseEnvironment(environment)
                 // .UseUrls(listenUrls.ToArray())
                 .PreferHostingUrls(false)
                 .Configure(app =>
