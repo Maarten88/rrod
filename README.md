@@ -1,9 +1,13 @@
 # RROD - React, Redux, Orleans and Dotnet Core
 ### Exploring a new web architecture
 
-This project is an eploration of next-generation architecture based on Dotnet Core and Javascript. When I started this, it was all very bleeding edge, but by now everything is (almost) released and ready for production!
+This project is an eploration of next-generation architecture based on Dotnet Core and Javascript. When I started this, it was all very bleeding edge, but I have maintained this repositories as these products matured, and now everything is released and ready for production!
 
-Here is the [introductory blogpost](https://medium.com/@MaartenSikkema/exploring-a-new-web-architecture-with-react-redux-orleans-and-dotnet-core-95175be56535#.aq0ovjefc) 
+Here is the [introductory blogpost](https://medium.com/@MaartenSikkema/exploring-a-new-web-architecture-with-react-redux-orleans-and-dotnet-core-95175be56535) 
+There are follow-up posts on my implementation of [Let's Encrypt Certificates](https://medium.com/@MaartenSikkema/automatically-request-and-use-lets-encrypt-certificates-in-dotnet-core-9d0d152a59b5), 
+the [React, Redux, and Typescript-based frontend](https://medium.com/@MaartenSikkema/using-react-redux-and-webpack-with-dotnet-core-to-build-a-modern-web-frontend-7e2d091b3ba), and the 
+[Orleans Actor-based backend](https://medium.com/@MaartenSikkema/using-dotnet-core-orleans-redux-and-websockets-to-build-a-scalable-realtime-back-end-cd0b65ec6b4d).
+I also added Dockerfiles and deployed this solution to a Kubernetes cluster. The config files (minus secrets) are in the [deploy](https://github.com/Maarten88/rrod/tree/master/deploy) folder.
 
 This project demonstrates many technologies in context:
 
@@ -20,26 +24,26 @@ This project demonstrates many technologies in context:
 - AspNet JavascriptServices middleware driving webpack during development (_requires node version 8+_)
 - AspNet middleware to serve gzip-compressed static assets when possible
 - AspNet Identity using a custom (Orleans based) Identity Store
+- DistributedCache and DataProtection services implemented against Orleans backend
 - Identity Server 4 based authentication
 - Middleware to protect against cross site scripting
 
 ## Actor back-end
-- Actor-based back-end based on [Microsoft Orleans 2.0 (rc1)](https://github.com/dotnet/orleans)
+- Actor-based back-end based on [Microsoft Orleans 2.0](https://github.com/dotnet/orleans)
 - Using Table Storage for persisting state (install the Azure Storage emulator or configure a 'real' storage connection to run this project)
 - Using Orleans Streams over an Azure Storage Queue for pushing updates from the back-end to subscribers
-- Demo Actor implementing Event Sourcing, using the Redux pattern
-- AspNet Distributed Cache service implemented against Orleans
+- Demo Actor implementing Event Sourcing, re-using the Redux pattern in the backend
 
-## Development and Deployment
+## Docker / Kubernetes based deployment
 - Use VS Code or Visual Studio for development using a local dotnet environment
-- Dockerfiles and VS Code tasks for local development (and debugging) using Docker Community Edition
-- Kubernetes Yaml files for deployment to a Kubernetes environment, such as Azure AKS (add your own configmaps/secrets)
+- Dockerfiles and VS Code tasks for local development and debugging using Docker Community Edition
+- Kubernetes Yaml files for deployment to a Kubernetes cluster, such as Azure AKS (add your own configmaps/secrets)
 
 ## See it in action
 - I deployed [a version of this complete solution to Azure Kubernetes Service (AKS) here](https://rrod.sikkema.com). Kubernetes and Docker are new to me, but I think this is the way forward.
-  There still are warnings about broken connections in the logs that do not happen when running locally. If someone can teach me how to correctly configure the loadbalancer in Azure AKS with WebSockets and TLS, please help me improve this.
+  Internally I see some warnings about broken SSL connections. If someone can teach me how to correctly configure the loadbalancer in Azure AKS with WebSockets and TLS, please help me improve this.
 
-This code should be considered experimental. It mostly works, however the project may have rough edges and has not been thoroughly tested. 
+This code should be considered experimental. It mostly works, however the project may have rough edges and has not been thoroughly tested.
 I welcome feedback!
 
 -- Maarten
