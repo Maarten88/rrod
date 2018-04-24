@@ -2,6 +2,7 @@
 import * as ReactDOM from 'react-dom';
 import * as classNames from 'classnames';
 import debounce from 'lodash-es/debounce';
+import { Element } from 'react-scroll';
 
 interface Cancelable {
     cancel(): void;
@@ -99,7 +100,7 @@ export default class ScrollEffect extends React.Component<ScrollEffectProps, Scr
 
     handleScroll(e) {
         if (!this.state.animated) {
-            let element = ReactDOM.findDOMNode(this);
+            let element = ReactDOM.findDOMNode(this) as HTMLElement;
             let elementPositionY = element.getBoundingClientRect().top + document.body.scrollTop,
                 scrollPositionY = window.scrollY,
                 windowHeight = window.innerHeight;

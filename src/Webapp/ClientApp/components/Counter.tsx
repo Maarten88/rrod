@@ -59,7 +59,7 @@ class Count extends React.Component<CountProps, CountState> {
     }
 
     render() {
-        const style = {
+        const style: React.CSSProperties = {
             transformStyle: "preserve-3d",
             // perspective: "100%",
             // opacity: this.state.animate,
@@ -67,7 +67,7 @@ class Count extends React.Component<CountProps, CountState> {
                 rotateX(${this.state.animate.interpolate({
                     inputRange: [0, 1],
                     outputRange: ["90deg", "0deg"]
-                })})`
+                })})` as string
         };        
         return (
             <Transition timeout={5000}>

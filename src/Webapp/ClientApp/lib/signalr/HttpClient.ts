@@ -3,12 +3,13 @@
 
 import { AbortSignal } from "./AbortController";
 import { HttpError, TimeoutError } from "./Errors";
+import { ILogger, LogLevel } from "./ILogger";
 
 export interface HttpRequest {
     method?: string;
     url?: string;
     content?: string | ArrayBuffer;
-    headers?: Map<string, string>;
+    headers?: { [key: string]: string };
     responseType?: XMLHttpRequestResponseType;
     abortSignal?: AbortSignal;
     timeout?: number;
@@ -49,15 +50,24 @@ export abstract class HttpClient {
 }
 
 export class DefaultHttpClient extends HttpClient {
+    private readonly logger: ILogger;
+
+    constructor(logger: ILogger) {
+        super();
+        this.logger = logger;
+    }
+
     public send(request: HttpRequest): Promise<HttpResponse> {
         return new Promise<HttpResponse>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
 
             xhr.open(request.method, request.url, true);
+            xhr.withCredentials = true;
             xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 
             if (request.headers) {
-                request.headers.forEach((value, header) => xhr.setRequestHeader(header, value));
+                Object.keys(request.headers)
+                    .forEach((header) => xhr.setRequestHeader(header, request.headers[header]));
             }
 
             if (request.responseType) {
@@ -87,10 +97,12 @@ export class DefaultHttpClient extends HttpClient {
             };
 
             xhr.onerror = () => {
+                this.logger.log(LogLevel.Warning, `Error from HTTP request. ${xhr.status}: ${xhr.statusText}`);
                 reject(new HttpError(xhr.statusText, xhr.status));
             };
 
             xhr.ontimeout = () => {
+                this.logger.log(LogLevel.Warning, `Timeout from HTTP request.`);
                 reject(new TimeoutError());
             };
 

@@ -22,6 +22,7 @@
     ],
     "paths": {
       "react": [ "node_modules/@types/react" ],
+      "redux": [ "node_modules/redux" ],
       "history": [ "node_modules/@types/history" ],
       "react-router": [ "ClientApp/types/react-router" ],
       "*": [

@@ -132,6 +132,7 @@ namespace Webapp
 
             var acmeOptions = new AcmeOptions
             {
+                AcmeSettings = config.GetSection(nameof(AcmeSettings)).Get<AcmeSettings>(),
                 GetChallengeResponse = async (challenge) =>
                 {
                     var cacheGrain = clusterClient.GetGrain<ICacheGrain<string>>(challenge);
@@ -193,7 +194,7 @@ namespace Webapp
                     logger.LogError("Ignoring noncritical error (stop W3SVC or Skype to fix this), continuing...");
                 }
 
-                var certificateManager = acmeHost.Services.GetRequiredService<AcmeCertificateManager>();
+                var certificateManager = acmeHost.Services.GetRequiredService<ICertificateManager>();
                 // var certificateManager = new AcmeCertificateManager(Options.Create(acmeOptions));
                 foreach (var endpoint in endpoints)
                 {
@@ -226,9 +227,7 @@ namespace Webapp
                             if (certificate == null)
                             {
                                 // It didn't work - create a temporary certificate so that we can still start with an untrusted certificate
-                                logger.LogCritical($"Error getting certificate for domain {domains.First()} (endpoint '{endpoint.Key}')");
-                                // var certificateAuthorityCertificate = CertBuilder.CreateCertificateAuthorityCertificate("RrodCA", out var tmpCaPrivateKey);
-                                // certificate = CertBuilder.CreateSelfSignedCertificateBasedOnCertificateAuthorityPrivateKey(domains.First(), certificateAuthorityCertificate.Subject, tmpCaPrivateKey);
+                                logger.LogCritical($"Error getting certificate for domain {domains.First()} (endpoint '{endpoint.Key}'). Creating self-signed temporary certificate...");
                                 certificate = CertHelper.BuildTlsSelfSignedServer(domains);
                             }
                             certs.Add(domains.First(), certificate);

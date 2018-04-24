@@ -1,6 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const merge = require('webpack-merge');
 const CompressionPlugin = require("compression-webpack-plugin");
 const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
@@ -8,7 +8,6 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 
 module.exports = (env) => {
     const isDevBuild = !(env && env.prod);
-    const extractCSS = new ExtractTextPlugin('site.css');
 
     // Configuration in common to both client-side and server-side bundles
     const sharedConfig = () => ({
@@ -44,13 +43,6 @@ module.exports = (env) => {
                     include: /ClientApp/,
                     use: [
                         {
-                            //loader: 'ts-loader',
-                            //options: {
-                            //    configFile: path.join(__dirname, 'tsconfig.client.json'),
-                            //    onlyCompileBundledFiles: true,
-                            //    instance: 'ts-client',
-                            //    context: __dirname,
-                            //}
                             loader: 'awesome-typescript-loader',
                             options: {
                                 configFileName: 'tsconfig.client.json',
@@ -63,14 +55,12 @@ module.exports = (env) => {
                 },
                 {
                     test: /\.(css|scss)$/,
-                    use: extractCSS.extract({
-                        fallback: 'style-loader',
-                        use: [
-                            'css-loader',
-                            'postcss-loader',
-                            'sass-loader'
-                        ]
-                    })
+                    use: [
+                        isDevBuild ? 'style-loader' : MiniCssExtractPlugin.loader,
+                        'css-loader',
+                        'postcss-loader',
+                        'sass-loader'
+                    ]
                 },
                 {
                     test: /\.(png|jpg|jpeg|gif)$/,
@@ -88,7 +78,14 @@ module.exports = (env) => {
             ]
         },
         plugins: [
-            extractCSS
+            // extractCSS
+            new MiniCssExtractPlugin({
+                // Options similar to the same options in webpackOptions.output
+                // both options are optional
+                filename: "[name].css"
+                //filename: isDevBuild ? '[name].css' : '[name].[hash].css',
+                // chunkFilename: isDevBuild ? '[id].css' : '[id].[hash].css',
+            })
          ].concat(isDevBuild ? [
             // Plugins that apply in development builds only 
         ] : [
@@ -111,6 +108,12 @@ module.exports = (env) => {
                         test: /[\\/]node_modules[\\/]/,
                         name: "vendor",
                         chunks: "all"
+                    },
+                    styles: {
+                        name: 'styles',
+                        test: /\.css$/,
+                        chunks: 'all',
+                        enforce: true
                     }
                 }
             }
@@ -130,12 +133,6 @@ module.exports = (env) => {
                     include: /ClientApp/,
                     use: [
                         {
-                            //loader: 'ts-loader',
-                            //options: {
-                            //    configFile: 'tsconfig.server.json',
-                            //    onlyCompileBundledFiles: true,
-                            //    instance: 'ts-server'
-                            //}
                             loader: 'awesome-typescript-loader',
                             options: {
                                 configFileName: 'tsconfig.server.json',

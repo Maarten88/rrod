@@ -64,26 +64,13 @@ export default createServerRenderer(params => {
             return props.children;
         };
 
-        //class Aux extends React.PureComponent<{}> {
-        //    render() {
-        //        return this.props.children;
-        //    }
-        //}
-
-        //class IfIEComment extends React.PureComponent<{ condition: string }> {
-        //    render() {
-        //        return `<!--[if ${this.props.condition}]>${renderToStaticMarkup(this.props.children as any)}<![endif]-->`;
-        //    }
-        //}
-        //const comment = '<!--[if lte IE 9]><script src="/dist/polyfill.js"></script><![endif]-->';
-
         const Html = ({ headTags, appString, state }) => (
             <html lang="en">
                 <head>
                     <meta charSet="utf-8" />
                     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
                     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                    <link rel="stylesheet" href="/dist/site.css" />
+                    <link rel="stylesheet" href="/dist/main-client.css" />
                     <script src="https://cdn.polyfill.io/v2/polyfill.js?features=default,Array.prototype.includes,Symbol,Promise,WeakMap,Object.setPrototypeOf,Object.getPrototypeOf,Object.entries"></script>
                     <base href="/" />
                     {/* <InlineScript script="delete window.Symbol;" /> */}

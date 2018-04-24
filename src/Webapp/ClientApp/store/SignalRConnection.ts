@@ -1,6 +1,6 @@
 ﻿import { Action, Reducer, ActionCreator } from 'redux';
 import { AppThunkAction } from './';
-import * as signalR from '../lib/signalr-client';
+import * as SignalR from '../lib/signalr';
 
 export interface ConnectedAction {
     type: 'CONNECTED';
@@ -18,7 +18,7 @@ const DefaultState = {
     connected: false
 }
 
-var connection: signalR.HubConnection;
+var connection: SignalR.HubConnection;
 
 type KnownAction = ConnectedAction | DisconnectedAction;
 
@@ -37,13 +37,13 @@ export const actionCreators = {
         if (state.connection.connected && connection)
             return;
 
-        const transportType = signalR.TransportType.WebSockets;
+        const transportType = SignalR.TransportType.WebSockets;
         /// const transportType = signalR.TransportType.LongPolling; // for IE9
         // const logger = new signalR.ConsoleLogger(signalR.LogLevel.Warning);
         // const options = { transport: transportType /*, logging: logger */};
 
         // const http = new signalR.HttpConnection("/actionsr", options);
-        connection = new signalR.HubConnection('/actionsr', { transport: transportType });
+        connection = new SignalR.HubConnection('/actionsr', { transport: transportType });
 
         connection.on('action', action => {
             if (action && action.type) {

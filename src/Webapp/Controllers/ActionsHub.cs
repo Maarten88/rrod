@@ -52,7 +52,7 @@ namespace Webapp
 
             // We add the subscription to the connection context metadata - this is the easiest way 
             // to keep it so we can unsubscribe from orleans when the javascript client disconnects
-            this.Context.Connection.Metadata.Add("actionsSubscription", actionsSubscription);
+            this.Context.Items.Add("actionsSubscription", actionsSubscription);
         }
 
         public override async Task OnDisconnectedAsync(Exception exception)
@@ -62,10 +62,10 @@ namespace Webapp
             else
                 this.logger.LogInformation($"connection {this.Context.ConnectionId} disconnected itself");
 
-            if (this.Context.Connection.Metadata.TryGetValue("actionsSubscription", out object subscription))
+            if (this.Context.Items.TryGetValue("actionsSubscription", out object subscription))
             {
                 await ((StreamSubscriptionHandle<IAction>)subscription).UnsubscribeAsync();
-                this.Context.Connection.Metadata.Remove("actionsSubscription");
+                this.Context.Items.Remove("actionsSubscription");
             }
         }
     }

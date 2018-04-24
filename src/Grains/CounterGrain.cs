@@ -50,7 +50,7 @@ namespace Grains
                 });
 
             var loadedState = await this.GetState();
-            if (loadedState.Started)
+            if (loadedState != null && loadedState.Started)
             {
                 this.StartCounterTimerInternal();
             }

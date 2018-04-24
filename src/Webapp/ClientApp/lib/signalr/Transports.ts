@@ -7,6 +7,7 @@ import { HttpError, TimeoutError } from "./Errors";
 import { HttpClient, HttpRequest } from "./HttpClient";
 import { IConnection } from "./IConnection";
 import { ILogger, LogLevel } from "./ILogger";
+import { Arg } from "./Utils";
 
 export enum TransportType {
     WebSockets,
@@ -14,13 +15,13 @@ export enum TransportType {
     LongPolling,
 }
 
-export const enum TransferMode {
+export enum TransferFormat {
     Text = 1,
     Binary,
 }
 
 export interface ITransport {
-    connect(url: string, requestedTransferMode: TransferMode, connection: IConnection): Promise<TransferMode>;
+    connect(url: string, transferFormat: TransferFormat, connection: IConnection): Promise<void>;
     send(data: any): Promise<void>;
     stop(): Promise<void>;
     onreceive: DataReceived;
@@ -37,9 +38,19 @@ export class WebSocketTransport implements ITransport {
         this.accessTokenFactory = accessTokenFactory || (() => null);
     }
 
-    public connect(url: string, requestedTransferMode: TransferMode, connection: IConnection): Promise<TransferMode> {
+    public connect(url: string, transferFormat: TransferFormat, connection: IConnection): Promise<void> {
+        Arg.isRequired(url, "url");
+        Arg.isRequired(transferFormat, "transferFormat");
+        Arg.isIn(transferFormat, TransferFormat, "transferFormat");
+        Arg.isRequired(connection, "connection");
 
-        return new Promise<TransferMode>((resolve, reject) => {
+        if (typeof (WebSocket) === "undefined") {
+            throw new Error("'WebSocket' is not supported in your environment.");
+        }
+
+        this.logger.log(LogLevel.Trace, "(WebSockets transport) Connecting");
+
+        return new Promise<void>((resolve, reject) => {
             url = url.replace(/^http/, "ws");
             const token = this.accessTokenFactory();
             if (token) {
@@ -47,22 +58,22 @@ export class WebSocketTransport implements ITransport {
             }
 
             const webSocket = new WebSocket(url);
-            if (requestedTransferMode === TransferMode.Binary) {
+            if (transferFormat === TransferFormat.Binary) {
                 webSocket.binaryType = "arraybuffer";
             }
 
             webSocket.onopen = (event: Event) => {
                 this.logger.log(LogLevel.Information, `WebSocket connected to ${url}`);
                 this.webSocket = webSocket;
-                resolve(requestedTransferMode);
+                resolve();
             };
 
-            webSocket.onerror = (event: Event) => {
-                reject();
+            webSocket.onerror = (event: ErrorEvent) => {
+                reject(event.error);
             };
 
             webSocket.onmessage = (message: MessageEvent) => {
-                this.logger.log(LogLevel.Trace, `(WebSockets transport) data received: ${message.data}`);
+                this.logger.log(LogLevel.Trace, `(WebSockets transport) data received. ${getDataDetail(message.data)}.`);
                 if (this.onreceive) {
                     this.onreceive(message.data);
                 }
@@ -83,6 +94,7 @@ export class WebSocketTransport implements ITransport {
 
     public send(data: any): Promise<void> {
         if (this.webSocket && this.webSocket.readyState === WebSocket.OPEN) {
+            this.logger.log(LogLevel.Trace, `(WebSockets transport) sending data. ${getDataDetail(data)}.`);
             this.webSocket.send(data);
             return Promise.resolve();
         }
@@ -115,25 +127,36 @@ export class ServerSentEventsTransport implements ITransport {
         this.logger = logger;
     }
 
-    public connect(url: string, requestedTransferMode: TransferMode, connection: IConnection): Promise<TransferMode> {
+    public connect(url: string, transferFormat: TransferFormat, connection: IConnection): Promise<void> {
+        Arg.isRequired(url, "url");
+        Arg.isRequired(transferFormat, "transferFormat");
+        Arg.isIn(transferFormat, TransferFormat, "transferFormat");
+        Arg.isRequired(connection, "connection");
+
         if (typeof (EventSource) === "undefined") {
-            Promise.reject("EventSource not supported by the browser.");
+            throw new Error("'EventSource' is not supported in your environment.");
         }
 
+        this.logger.log(LogLevel.Trace, "(SSE transport) Connecting");
+
         this.url = url;
-        return new Promise<TransferMode>((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
+            if (transferFormat !== TransferFormat.Text) {
+                reject(new Error("The Server-Sent Events transport only supports the 'Text' transfer format"));
+            }
+
             const token = this.accessTokenFactory();
             if (token) {
                 url += (url.indexOf("?") < 0 ? "?" : "&") + `access_token=${encodeURIComponent(token)}`;
             }
 
-            const eventSource = new EventSource(url);
+            const eventSource = new EventSource(url, { withCredentials: true });
 
             try {
                 eventSource.onmessage = (e: MessageEvent) => {
                     if (this.onreceive) {
                         try {
-                            this.logger.log(LogLevel.Trace, `(SSE transport) data received: ${e.data}`);
+                            this.logger.log(LogLevel.Trace, `(SSE transport) data received. ${getDataDetail(e.data)}.`);
                             this.onreceive(e.data);
                         } catch (error) {
                             if (this.onclose) {
@@ -145,7 +168,7 @@ export class ServerSentEventsTransport implements ITransport {
                 };
 
                 eventSource.onerror = (e: any) => {
-                    reject();
+                    reject(new Error(e.message || "Error occurred"));
 
                     // don't report an error if the transport did not start successfully
                     if (this.eventSource && this.onclose) {
@@ -157,7 +180,7 @@ export class ServerSentEventsTransport implements ITransport {
                     this.logger.log(LogLevel.Information, `SSE connected to ${this.url}`);
                     this.eventSource = eventSource;
                     // SSE is a text protocol
-                    resolve(TransferMode.Text);
+                    resolve();
                 };
             } catch (e) {
                 return Promise.reject(e);
@@ -166,7 +189,7 @@ export class ServerSentEventsTransport implements ITransport {
     }
 
     public async send(data: any): Promise<void> {
-        return send(this.httpClient, this.url, this.accessTokenFactory, data);
+        return send(this.logger, "SSE", this.httpClient, this.url, this.accessTokenFactory, data);
     }
 
     public stop(): Promise<void> {
@@ -197,35 +220,43 @@ export class LongPollingTransport implements ITransport {
         this.pollAbort = new AbortController();
     }
 
-    public connect(url: string, requestedTransferMode: TransferMode, connection: IConnection): Promise<TransferMode> {
+    public connect(url: string, transferFormat: TransferFormat, connection: IConnection): Promise<void> {
+        Arg.isRequired(url, "url");
+        Arg.isRequired(transferFormat, "transferFormat");
+        Arg.isIn(transferFormat, TransferFormat, "transferFormat");
+        Arg.isRequired(connection, "connection");
+
         this.url = url;
+
+        this.logger.log(LogLevel.Trace, "(LongPolling transport) Connecting");
 
         // Set a flag indicating we have inherent keep-alive in this transport.
         connection.features.inherentKeepAlive = true;
 
-        if (requestedTransferMode === TransferMode.Binary && (typeof new XMLHttpRequest().responseType !== "string")) {
+        if (transferFormat === TransferFormat.Binary && (typeof new XMLHttpRequest().responseType !== "string")) {
             // This will work if we fix: https://github.com/aspnet/SignalR/issues/742
             throw new Error("Binary protocols over XmlHttpRequest not implementing advanced features are not supported.");
         }
 
-        this.poll(this.url, requestedTransferMode);
-        return Promise.resolve(requestedTransferMode);
+        this.poll(this.url, transferFormat);
+        return Promise.resolve();
     }
 
-    private async poll(url: string, transferMode: TransferMode): Promise<void> {
+    private async poll(url: string, transferFormat: TransferFormat): Promise<void> {
         const pollOptions: HttpRequest = {
             abortSignal: this.pollAbort.signal,
-            headers: new Map<string, string>(),
-            timeout: 120000,
+            headers: {},
+            timeout: 90000,
         };
 
-        if (transferMode === TransferMode.Binary) {
+        if (transferFormat === TransferFormat.Binary) {
             pollOptions.responseType = "arraybuffer";
         }
 
         const token = this.accessTokenFactory();
         if (token) {
-            pollOptions.headers.set("Authorization", `Bearer ${token}`);
+            // tslint:disable-next-line:no-string-literal
+            pollOptions.headers["Authorization"] = `Bearer ${token}`;
         }
 
         while (!this.pollAbort.signal.aborted) {
@@ -252,7 +283,7 @@ export class LongPollingTransport implements ITransport {
                 } else {
                     // Process the response
                     if (response.content) {
-                        this.logger.log(LogLevel.Trace, `(LongPolling transport) data received: ${response.content}`);
+                        this.logger.log(LogLevel.Trace, `(LongPolling transport) data received. ${getDataDetail(response.content)}.`);
                         if (this.onreceive) {
                             this.onreceive(response.content);
                         }
@@ -277,7 +308,7 @@ export class LongPollingTransport implements ITransport {
     }
 
     public async send(data: any): Promise<void> {
-        return send(this.httpClient, this.url, this.accessTokenFactory, data);
+        return send(this.logger, "LongPolling", this.httpClient, this.url, this.accessTokenFactory, data);
     }
 
     public stop(): Promise<void> {
@@ -289,16 +320,31 @@ export class LongPollingTransport implements ITransport {
     public onclose: TransportClosed;
 }
 
-async function send(httpClient: HttpClient, url: string, accessTokenFactory: () => string, content: string | ArrayBuffer): Promise<void> {
+function getDataDetail(data: any): string {
+    let length: string = null;
+    if (data instanceof ArrayBuffer) {
+        length = `Binary data of length ${data.byteLength}`;
+    } else if (typeof data === "string") {
+        length = `String data of length ${data.length}`;
+    }
+    return length;
+}
+
+async function send(logger: ILogger, transportName: string, httpClient: HttpClient, url: string, accessTokenFactory: () => string, content: string | ArrayBuffer): Promise<void> {
     let headers;
     const token = accessTokenFactory();
     if (token) {
-        headers = new Map<string, string>();
-        headers.set("Authorization", `Bearer ${accessTokenFactory()}`);
+        headers = {
+            ["Authorization"]: `Bearer ${accessTokenFactory()}`,
+        };
     }
 
-    await httpClient.post(url, {
+    logger.log(LogLevel.Trace, `(${transportName} transport) sending data. ${getDataDetail(content)}.`);
+
+    const response = await httpClient.post(url, {
         content,
         headers,
     });
+
+    logger.log(LogLevel.Trace, `(${transportName} transport) request complete. Response status: ${response.statusCode}.`);
 }
