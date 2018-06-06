@@ -4,7 +4,7 @@
     <GenerateFullPaths>true</GenerateFullPaths>
     <OutputType>Exe</OutputType>
     <UserSecretsId>rrod-secrets</UserSecretsId>
-    <LangVersion>7.1</LangVersion>
+    <LangVersion>7.3</LangVersion>
     <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
 

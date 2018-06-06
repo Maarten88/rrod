@@ -6,7 +6,7 @@
     <UserSecretsId>rrod-secrets</UserSecretsId>
     <TypescriptCompileBlocked>true</TypescriptCompileBlocked>
     <TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
-    <LangVersion>7.1</LangVersion>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   
   <ItemGroup>

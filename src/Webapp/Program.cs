@@ -325,7 +325,7 @@ namespace Webapp
                 })
                 .Build();
 
-            webHost.Run();
+            await webHost.RunAsync();
         }
     }
 }
