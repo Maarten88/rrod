@@ -19,7 +19,7 @@ This project demonstrates many technologies in context:
 - Realtime updates from the server over a SignalR Websocket connection
 
 ## Web front-end
-- Webserver based on AspNet Core 2.0, running as a standalone executable
+- Webserver based on AspNet Core 2.1, running as a standalone executable
 - Automatic request and use of Let's Encrypt TLS certificates on startup
 - AspNet JavascriptServices middleware driving webpack during development (_requires node version 8+_)
 - AspNet middleware to serve gzip-compressed static assets when possible
@@ -39,12 +39,8 @@ This project demonstrates many technologies in context:
 - Dockerfiles and VS Code tasks for local development and debugging using Docker Community Edition
 - Kubernetes Yaml files for deployment to a Kubernetes cluster, such as Azure AKS (add your own configmaps/secrets)
 
-## See it in action
-- I deployed [a version of this complete solution to Azure Kubernetes Service (AKS) here](https://rrod.sikkema.com). Kubernetes and Docker are new to me, but I think this is the way forward.
-  Internally I see some warnings about broken SSL connections. If someone can teach me how to correctly configure the loadbalancer in Azure AKS with WebSockets and TLS, please help me improve this.
-
 ## Run it yourself
-1. Install dotnet core 2.0 (or higher) and nodejs 8 (or higher).
+1. Install dotnet core 2.1 (or higher) and nodejs 8 (or higher).
 2. Create a secrets.json file, put it in the right place (in Windows, its `%AppData%\Roaming\Microsoft\UserSecrets\rrod-secrets\secrets.json`, on OSX, it's in `~/.microsoft/usersecrets/rrod-secrets/secrets.json`). 
 A storage account first has to be created in [Microsoft Azure](https://portal.azure.com). On Windows, you can alternatively install the Azure Storage Emulator and put "UseDevelopmentStorage=true" for the storage connection strings. The SMTP connection string is not really necessary.
 It is possible to configure Orleans with other types of clustering that do not use Azure Storage (such as [native Kubernetes Clustering](https://github.com/OrleansContrib/Orleans.Clustering.Kubernetes)) with a few code changes. The ReduxGrain base class (used for storing users and counter values) is hardcoded against Azure storage and really needs the ReduxConnectionString.
