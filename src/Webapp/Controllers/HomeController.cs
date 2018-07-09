@@ -45,11 +45,11 @@ namespace Webapp.Controllers
             this.env = env;
             this.logger = loggerFactory.CreateLogger<HomeController>();
 
-            string sessionCookie = httpContextAccessor.HttpContext.Request.Cookies["SESSION"];
+            string sessionCookie = httpContextAccessor.HttpContext.Request.Cookies[Constants.SessionCookieName];
             if (string.IsNullOrEmpty(sessionCookie) || !Guid.TryParse(sessionCookie, out this.sessionId))
             {
                 this.sessionId = Guid.NewGuid();
-                httpContextAccessor.HttpContext.Response.Cookies.Append("SESSION", this.sessionId.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow + TimeSpan.FromDays(365), HttpOnly = false, Secure = httpContextAccessor.HttpContext.Request.IsHttps });
+                httpContextAccessor.HttpContext.Response.Cookies.Append(Constants.SessionCookieName, this.sessionId.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow + TimeSpan.FromDays(180), HttpOnly = false, Secure = httpContextAccessor.HttpContext.Request.IsHttps });
             }
         }
 

@@ -1,7 +1,5 @@
-FROM microsoft/dotnet:2.0-sdk AS build
-RUN apt-get -qq update
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
-RUN apt-get install -y nodejs
+FROM microsoft/dotnet:2.1-sdk-alpine AS build
+RUN apk add --update nodejs nodejs-npm
 
 FROM build AS publish
 WORKDIR /build
@@ -9,10 +7,8 @@ COPY . .
 WORKDIR /build/src/Webapp
 RUN dotnet publish -c Release -o /app
 
-FROM microsoft/aspnetcore:2.0 AS base
-RUN apt-get -qq update && apt-get -qqy --no-install-recommends install wget gnupg git unzip
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
-RUN apt-get install -y nodejs
+FROM microsoft/dotnet:2.1-aspnetcore-runtime-alpine AS base
+RUN apk add --update nodejs
 
 WORKDIR /app
 EXPOSE 443 80

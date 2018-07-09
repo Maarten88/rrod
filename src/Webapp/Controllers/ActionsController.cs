@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Webapp.Services;
 using Microsoft.AspNetCore.Hosting;
 using Webapp.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Webapp.Controllers
 {
@@ -16,16 +17,19 @@ namespace Webapp.Controllers
         private readonly Guid sessionId;
         private readonly IClusterClient grainClient;
         private readonly IHostingEnvironment env;
+        private readonly ILogger logger;
 
-        public ActionsController(IClusterClient grainClient, IHttpContextAccessor httpContextAccessor, IHostingEnvironment env): base()
+        public ActionsController(IClusterClient grainClient, IHttpContextAccessor httpContextAccessor, IHostingEnvironment env, ILogger<ActionsController> logger) : base()
         {
             this.grainClient = grainClient;
             this.env = env;
-            string sessionCookie = httpContextAccessor.HttpContext.Request.Cookies["SESSION"];
+            this.logger = logger;
+
+            string sessionCookie = httpContextAccessor.HttpContext.Request.Cookies[Constants.SessionCookieName];
             if (string.IsNullOrEmpty(sessionCookie) || !Guid.TryParse(sessionCookie, out this.sessionId))
             {
+                this.logger.LogError("SignalR Hub: unexpected request without expected 'SESSION' cookie. Session will not work!");
                 this.sessionId = Guid.NewGuid();
-                httpContextAccessor.HttpContext.Response.Cookies.Append("SESSION", this.sessionId.ToString(), new CookieOptions { Expires = DateTimeOffset.UtcNow + TimeSpan.FromDays(365), HttpOnly = false, Secure = httpContextAccessor.HttpContext.Request.IsHttps });
             }
         }
 

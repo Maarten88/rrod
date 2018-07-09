@@ -8,7 +8,7 @@ using Orleans.Streams;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Http;
 
-namespace Webapp
+namespace Webapp.Controllers
 {
     public class ActionsHub : Hub
     {
@@ -21,7 +21,7 @@ namespace Webapp
             this.grainClient = grainClient;
             this.logger = logger;
 
-            string sessionCookie = httpContextAccessor.HttpContext.Request.Cookies["SESSION"];
+            string sessionCookie = httpContextAccessor.HttpContext.Request.Cookies[Constants.SessionCookieName];
             if (string.IsNullOrEmpty(sessionCookie) || !Guid.TryParse(sessionCookie, out this.sessionId))
             {
                 this.logger.LogError("SignalR Hub: unexpected request without expected 'SESSION' cookie. Session will not work!");
